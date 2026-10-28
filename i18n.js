@@ -194,6 +194,7 @@
   const params = new URLSearchParams(location.search);
   const applyLithuanian = () => {
     document.documentElement.lang = 'lt';
+    if (translations[document.title]) document.title = translations[document.title];
     const translateText = node => {
       const original = node.nodeValue || '';
       const trimmed = original.trim();
