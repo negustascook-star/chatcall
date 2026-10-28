@@ -31,6 +31,13 @@ faile nustatant `CATALOG_SOURCE=supabase` ir serverio raktą. `.env` automatinis
 įkėlimas palaikomas nuo Node.js 20.12. Rezervacijų kalendoriaus ir išsaugojimo
 į `bookings` prijungimas yra kitas etapas.
 
+### Diegimas Render
+
+API paruoštas Render hostingui: `render.yaml` blueprint ir
+[docs/RENDER.md](docs/RENDER.md). Serverio `SUPABASE_SECRET_KEY` įvedamas Render
+**Environment** skiltyje, o ne į Git ar `.env.example`. Render taip pat gali
+talpinti statinę `index.html` svetainę atskirai.
+
 ```bash
 npm install
 
@@ -227,6 +234,7 @@ Dengiama:
 ## Toliau
 
 - Supabase paleidimas ir serverio rakto nustatymas: [docs/SUPABASE.md](docs/SUPABASE.md).
+- Diegimas Render: [docs/RENDER.md](docs/RENDER.md).
 - Architektūra, būsenų mašina ir Twilio/OpenAI prijungimo planas: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 

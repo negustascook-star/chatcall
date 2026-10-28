@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: chatcall-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run typecheck
+    startCommand: npm run api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.20.0
+      - key: DATA_DIR
+        value: ./data
+      - key: CATALOG_SOURCE
+        value: supabase
+      - key: SUPABASE_URL
+        value: https://lzongluhbmyasadscuri.supabase.co
+      - key: SUPABASE_TENANT_ID
+        value: demo-tire
+      # Render parodys lauką raktui įvesti. Niekada necommitinkite jo į Git.
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+    # Nemokamo plano diskas yra laikinas. Jei reikia išsaugoti poreikius ir
+    # transkriptus tarp deploy'ų, prijunkite mokamą Render diską:
+    # disk:
+    #   name: chatcall-data
+    #   mountPath: /opt/render/project/src/data
+    #   sizeGB: 1
