@@ -240,11 +240,11 @@ Dengiama:
 
 ## Svetainė ir gyvas API demo
 
-Repo šaknyje esantis `index.html` pateikia Aical produkto svetainę ir bandomąjį pokalbį su ChatCall verslo logika. Frontendas naudoja `GET /api/tenants`, `POST /api/calls`, `POST /api/calls/:id/messages` ir `POST /api/calls/:id/end` maršrutus. API adresą galima pakeisti svetainės „API prisijungimas“ laukelyje.
+Repo šaknyje esantis `index.html` pateikia AIcall rinkodaros puslapį ir viešą, pavyzdiniais duomenimis pažymėtą `#live-demo`. Demonstracija naudoja viešus demo maršrutus `GET /api/tenants`, `POST /api/calls`, `POST /api/calls/:id/messages` ir `POST /api/calls/:id/end`; jos duomenys nėra savininko darbo aplinkos įrašai.
 
-`auth.html` pateikia atskirą prisijungimo / registracijos puslapio dizainą. Svetainės „Log in“ ir „Get started“ nuorodos jį atidaro, o API serveris aptarnauja šį failą per `/auth.html`. Autentifikacija ir nukreipimas į pagrindinę aplikaciją bus prijungti vėliau.
+`auth.html` naudoja Supabase Auth registracijai bei prisijungimui. Sėkmingai prisijungus atidaromas `app.html` – savininko aplinka, kuri skaito / rašo įmonei priklausančius įrašus per RLS apsaugotas Supabase lenteles. Verslo lentelių migracija ir naršyklės publishable key turi būti įdiegti prieš registracijos įjungimą.
 
-Paleisk API (`npm install`, tada `npm run api`) ir atidaryk `http://localhost:3000/` – tame pačiame serveryje atiduodama ir `index.html` svetainė. Jei puslapis publikuojamas atskirai, nurodyk viešai pasiekiamą API adresą; GitHub Pages pats backend’o nepaleidžia. API šiuo metu yra demo režimo, be autentifikacijos, todėl jos nereikėtų atverti viešam naudojimui neįdiegus saugumo priemonių.
+Paleisk API (`npm ci`, tada `npm run api`) ir atidaryk `http://localhost:3000/`. Supabase konfigūracija: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`; katalogo demonstracijai serveriui taip pat reikalingas `SUPABASE_SECRET_KEY`. Niekada neatskleisk serverio rakto naršyklei. Demonstraciniai skambučių API maršrutai nėra autentifikuoti ir turi būti naudojami tik su viešais demonstraciniais tenant duomenimis.
 
 ## AIcall verslo aplinka
 
