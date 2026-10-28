@@ -126,10 +126,13 @@ afterEach(async () => {
 });
 
 describe("admin panel", () => {
-  it("serves the dashboard and protects the API with ADMIN_KEY", async () => {
-    const page = await fetch(`${baseUrl}/admin.html`);
+  it("serves the dashboard at /admin and protects the API with ADMIN_KEY", async () => {
+    const page = await fetch(`${baseUrl}/admin`);
     expect(page.status).toBe(200);
     expect(await page.text()).toContain("Administratoriaus panelė");
+
+    const legacy = await fetch(`${baseUrl}/admin.html`);
+    expect(legacy.status).toBe(200);
 
     const unauthorized = await fetch(`${baseUrl}/api/admin/overview`);
     expect(unauthorized.status).toBe(401);

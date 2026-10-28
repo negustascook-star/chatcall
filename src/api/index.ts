@@ -59,7 +59,7 @@ server.listen(port, () => {
   console.log(`Chatcall API veikia: http://localhost:${port}`);
   console.log(`Duomenų katalogas: ${dataDir}`);
   console.log(`Paslaugų ir sandėlio šaltinis: ${catalogSource}`);
-  console.log(`Administratoriaus panelė: ${adminKey && admin ? "įjungta (/admin.html)" : "neįjungta"}`);
+  console.log(`Administratoriaus panelė: ${adminKey && admin ? "įjungta (/admin)" : "neįjungta"}`);
   if (!configuredAdminKey) {
     console.warn("ADMIN_KEY nenustatytas – naudojamas numatytasis demonstracinis raktas. Produkcijoje nustatykite savo ADMIN_KEY.");
   }

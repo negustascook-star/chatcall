@@ -139,7 +139,7 @@ async function route(
     return;
   }
 
-  if (method === "GET" && url.pathname === "/admin.html") {
+  if (method === "GET" && (url.pathname === "/admin" || url.pathname === "/admin/" || url.pathname === "/admin.html")) {
     await sendWebsite(res, ctx.adminFile);
     return;
   }

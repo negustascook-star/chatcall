@@ -19,7 +19,7 @@ services:
         value: demo-tire
       - key: SUPABASE_PUBLISHABLE_KEY
         sync: false
-      # Server-side password for /admin.html. Render will ask for the value.
+      # Server-side password for /admin. Render will ask for the value.
       - key: ADMIN_KEY
         sync: false
       # Optional; keep unset until platform administrator configures this price.

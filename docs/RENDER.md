@@ -32,7 +32,7 @@ neveiks.
 5. `SUPABASE_PUBLISHABLE_KEY` – **Publishable key** reikšmė, prasidedanti
    `sb_publishable_`. Ji skirta naršyklei (`auth.html`, `app.html`) ir yra
    vieša, todėl jos slėpti nereikia. Teises riboja Supabase RLS.
-6. `ADMIN_KEY` – slaptažodis, kuriuo apsaugota `/admin.html` panelė. Nustatykite
+6. `ADMIN_KEY` – slaptažodis, kuriuo apsaugota `/admin` panelė. Nustatykite
    ilgą atsitiktinę reikšmę; jos necommitinkite į Git.
 7. Paleiskite deploy.
 
@@ -52,7 +52,7 @@ Aplinkos kintamieji:
 | `SUPABASE_TENANT_ID` | `demo-tire` |
 | `SUPABASE_SECRET_KEY` | Jūsų serverio Secret key (tik Render aplinkoje) |
 | `SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_...` (viešas raktas `auth.html` ir `app.html`) |
-| `ADMIN_KEY` | Slaptažodis `/admin.html` panelei (tik Render aplinkoje) |
+| `ADMIN_KEY` | Slaptažodis `/admin` panelei (tik Render aplinkoje) |
 | `DATA_DIR` | `./data` |
 | `NODE_VERSION` | `22.20.0` |
 
@@ -106,7 +106,7 @@ viešai atidaryta ji tinka tik demonstracijai.
 Atidarykite:
 
 ```text
-https://aicall.lt/admin.html
+https://aicall.lt/admin
 ```
 
 Įveskite `ADMIN_KEY` reikšmę. Panelė leidžia matyti įmones, jų savininkus,

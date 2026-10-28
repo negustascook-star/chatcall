@@ -7,7 +7,7 @@
 - Veikianti svetainė, registracija, owner darbo vieta ir kalendorius.
 - Supabase daugiabučių (multi-tenant) duomenų bazė: `companies`, `business_services`,
   `specialists`, `business_calls`, `appointments`.
-- Administratoriaus panelė (`/admin.html`).
+- Administratoriaus panelė (`/admin`).
 - Serverio API (`/api/...`), bet jame dar nėra ElevenLabs maršrutų.
 
 Telefonijos integracijos kode dar nėra: nei agento, nei webhook'ų, nei skambučių įrašymo.
@@ -207,7 +207,7 @@ Twilio numerį į ElevenLabs įkeliate: **Phone Numbers → Import from Twilio**
 | Ką | Kur |
 | --- | --- |
 | Owner darbo vieta | https://aicall.lt/app.html |
-| Administratorius | https://aicall.lt/admin.html |
+| Administratorius | https://aicall.lt/admin |
 | Render kintamieji | https://dashboard.render.com → `chatcall-api` → **Environment** |
 | Supabase SQL | https://supabase.com/dashboard/project/lzongluhbmyasadscuri/sql/new |
 

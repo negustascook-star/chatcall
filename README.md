@@ -252,6 +252,6 @@ Savininkų prisijungimas ir verslo duomenys naudoja Supabase Auth bei RLS. Prie�
 
 `app.html` kalendorius turi mėnesio ir savaitės vaizdą. Vizitus galima kurti, redaguoti, žymėti kaip įvykusius / atšauktus ir ištrinti; paslaugos bei specialistai pasirenkami iš tų pačių Supabase lentelių, kurias naudoja DI registratorius.
 
-Platformos administratoriui skirta `/admin.html` panelė. Ją apsaugo serverio aplinkos kintamasis `ADMIN_KEY`; panelė rodo įmones, savininkų el. paštus, vizitus, skambučius ir leidžia aktyvuoti `pending`, `receptionist` arba `warehouse` planą. Supabase secret key naudojamas tik serverio pusėje. Administratoriaus API maršrutai yra `/api/admin/overview`, `/api/admin/companies`, `/api/admin/companies/:id/plan`, `/api/admin/appointments` ir `/api/admin/calls`.
+Platformos administratoriui skirta `/admin` panelė. Ją apsaugo serverio aplinkos kintamasis `ADMIN_KEY`; panelė rodo įmones, savininkų el. paštus, vizitus, skambučius ir leidžia aktyvuoti `pending`, `receptionist` arba `warehouse` planą. Supabase secret key naudojamas tik serverio pusėje. Administratoriaus API maršrutai yra `/api/admin/overview`, `/api/admin/companies`, `/api/admin/companies/:id/plan`, `/api/admin/appointments` ir `/api/admin/calls`.
 
 Mokėjimų tiekėjas, telefonija ir tiekėjų katalogai šiame diegime dar neprijungti. Todėl pasirinktas planas paskyroje lieka neaktyvus, skambučių / rezervacijų skiltyse rodomos tik realios DB eilutės, o tiekėjo informacija nepateikiama kaip gyva.
