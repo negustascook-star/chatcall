@@ -84,7 +84,7 @@ describe("HTTP API", () => {
     const response = await fetch(`${baseUrl}/`);
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
-    expect(await response.text()).toContain("Aical");
+    expect(await response.text()).toContain("AIcall");
   });
 
   it("returns useful errors", async () => {

@@ -9,9 +9,14 @@ Jei projekte `lzongluhbmyasadscuri` dar nebuvo paleista schema, Supabase
 **SQL Editor** įvykdykite iš eilės:
 
 1. `supabase/migrations/20261028140000_initial_autoservice.sql`
-2. `supabase/seed.sql`
+2. `supabase/migrations/20261028170000_business_owner_app.sql`
+3. `supabase/seed.sql`
 
-Be šių lentelių API negalės nuskaityti `services` ir `inventory`.
+Be pirmos migracijos API negalės nuskaityti `services` ir `inventory`. Antroji
+migracija sukuria savininko aplikacijos lenteles (`companies`,
+`business_services`, `specialists`, `business_faq`, `business_inventory`,
+`business_calls`, `appointments`) ir RLS taisykles, be kurių `app.html`
+neveiks.
 
 ## 2. Render Web Service
 
@@ -19,11 +24,15 @@ Be šių lentelių API negalės nuskaityti `services` ir `inventory`.
 
 1. Render Dashboard → **New → Blueprint**.
 2. Prijunkite GitHub repo `negustascook-star/chatcall`.
-3. Render perskaitys `render.yaml` ir paprašys įvesti `SUPABASE_SECRET_KEY`.
-4. Įklijuokite **Secret key** reikšmę iš Supabase
+3. Render perskaitys `render.yaml` ir paprašys įvesti `SUPABASE_SECRET_KEY`
+   bei `SUPABASE_PUBLISHABLE_KEY`.
+4. `SUPABASE_SECRET_KEY` – **Secret key** reikšmė iš Supabase
    (**Project Settings → API Keys → Secret keys**). Ji prasideda `sb_secret_`.
    Galima naudoti ir seną `service_role` JWT raktą, prasidedantį `eyJ`.
-5. Paleiskite deploy.
+5. `SUPABASE_PUBLISHABLE_KEY` – **Publishable key** reikšmė, prasidedanti
+   `sb_publishable_`. Ji skirta naršyklei (`auth.html`, `app.html`) ir yra
+   vieša, todėl jos slėpti nereikia. Teises riboja Supabase RLS.
+6. Paleiskite deploy.
 
 ### Variantas B: Rankinis Web Service
 
@@ -40,6 +49,7 @@ Aplinkos kintamieji:
 | `SUPABASE_URL` | `https://lzongluhbmyasadscuri.supabase.co` |
 | `SUPABASE_TENANT_ID` | `demo-tire` |
 | `SUPABASE_SECRET_KEY` | Jūsų serverio Secret key (tik Render aplinkoje) |
+| `SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_...` (viešas raktas `auth.html` ir `app.html`) |
 | `DATA_DIR` | `./data` |
 | `NODE_VERSION` | `22.20.0` |
 
