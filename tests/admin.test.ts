@@ -2,13 +2,15 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createApiServer } from "../src/api/server.js";
-import type {
-  AdminAppointment,
-  AdminCall,
-  AdminCompany,
-  AdminDataSource,
-  AdminStats,
-  PlanCode,
+import {
+  AdminSchemaOutdatedError,
+  SupabaseAdmin,
+  type AdminAppointment,
+  type AdminCall,
+  type AdminCompany,
+  type AdminDataSource,
+  type AdminStats,
+  type PlanCode,
 } from "../src/supabase/admin.js";
 import { createHarness } from "./helpers.js";
 
@@ -16,6 +18,9 @@ const COMPANY_ID = "ac871830-632c-4595-a48c-16d3e6dee817";
 
 class FakeAdmin implements AdminDataSource {
   updated: { id: string; planCode: PlanCode } | undefined;
+  suspended: { id: string; reason: string } | undefined;
+  restored: string | undefined;
+  deleted: string | undefined;
   lastAppointmentsLimit: number | undefined;
   lastCallsLimit: number | undefined;
 
@@ -29,6 +34,8 @@ class FakeAdmin implements AdminDataSource {
       phone: "+370 600 00000",
       planCode: "pending",
       paidAt: null,
+      suspendedAt: null,
+      suspendedReason: "",
       createdAt: "2026-10-28T16:00:00.000Z",
       appointments: 2,
       calls: 1,
@@ -70,6 +77,7 @@ class FakeAdmin implements AdminDataSource {
         services: 3,
         specialists: 1,
         paidCompanies: this.companies.filter((company) => company.planCode !== "pending").length,
+        suspendedCompanies: this.companies.filter((company) => company.suspendedAt !== null).length,
       },
       companies: this.companies,
     };
@@ -88,6 +96,32 @@ class FakeAdmin implements AdminDataSource {
     return company;
   }
 
+  async suspendCompany(id: string, reason: string): Promise<AdminCompany | undefined> {
+    this.suspended = { id, reason };
+    const company = this.companies.find((entry) => entry.id === id);
+    if (!company) return undefined;
+    company.suspendedAt = "2026-10-28T18:00:00.000Z";
+    company.suspendedReason = reason;
+    return company;
+  }
+
+  async restoreCompany(id: string): Promise<AdminCompany | undefined> {
+    this.restored = id;
+    const company = this.companies.find((entry) => entry.id === id);
+    if (!company) return undefined;
+    company.suspendedAt = null;
+    company.suspendedReason = "";
+    return company;
+  }
+
+  async deleteCompany(id: string): Promise<boolean> {
+    this.deleted = id;
+    const index = this.companies.findIndex((entry) => entry.id === id);
+    if (index < 0) return false;
+    this.companies.splice(index, 1);
+    return true;
+  }
+
   async listAppointments(limit = 100): Promise<AdminAppointment[]> {
     this.lastAppointmentsLimit = limit;
     return this.appointments.slice(0, limit);
@@ -96,6 +130,12 @@ class FakeAdmin implements AdminDataSource {
   async listCalls(limit = 100): Promise<AdminCall[]> {
     this.lastCallsLimit = limit;
     return this.calls.slice(0, limit);
+  }
+}
+
+class StaleSchemaAdmin extends FakeAdmin {
+  override async suspendCompany(): Promise<AdminCompany | undefined> {
+    throw new AdminSchemaOutdatedError();
   }
 }
 
@@ -207,6 +247,155 @@ describe("admin panel", () => {
       headers: { "x-admin-key": "ADMIN123" },
     });
     expect(invalidLimit.status).toBe(400);
+  });
+
+  it("ships company controls in the dashboard UI", async () => {
+    const page = await fetch(`${baseUrl}/admin`);
+    const html = await page.text();
+    expect(html).toContain("exportCompanies");
+    expect(html).toContain("Užblokuoti įmonę?");
+    expect(html).toContain("Ištrinti įmonę visam laikui?");
+  });
+
+  it("suspends, restores and deletes a company", async () => {
+    const headers = { "x-admin-key": "ADMIN123", "Content-Type": "application/json" };
+
+    const suspended = await fetch(`${baseUrl}/api/admin/companies/${COMPANY_ID}/suspend`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ reason: "Neprisijungia savininkas" }),
+    });
+    expect(suspended.status).toBe(200);
+    const suspendedBody = (await suspended.json()) as { company: AdminCompany };
+    expect(suspendedBody.company.suspendedAt).not.toBeNull();
+    expect(suspendedBody.company.suspendedReason).toBe("Neprisijungia savininkas");
+    expect(admin.suspended).toEqual({ id: COMPANY_ID, reason: "Neprisijungia savininkas" });
+
+    const overview = await fetch(`${baseUrl}/api/admin/overview`, { headers: { "x-admin-key": "ADMIN123" } });
+    expect(((await overview.json()) as { stats: AdminStats }).stats.suspendedCompanies).toBe(1);
+
+    const restored = await fetch(`${baseUrl}/api/admin/companies/${COMPANY_ID}/restore`, {
+      method: "POST",
+      headers,
+    });
+    expect(restored.status).toBe(200);
+    expect(((await restored.json()) as { company: AdminCompany }).company.suspendedAt).toBeNull();
+    expect(admin.restored).toBe(COMPANY_ID);
+
+    const tooLong = await fetch(`${baseUrl}/api/admin/companies/${COMPANY_ID}/suspend`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ reason: "x".repeat(501) }),
+    });
+    expect(tooLong.status).toBe(400);
+
+    const invalidId = await fetch(`${baseUrl}/api/admin/companies/not-a-uuid/suspend`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ reason: "test" }),
+    });
+    expect(invalidId.status).toBe(400);
+
+    const deleted = await fetch(`${baseUrl}/api/admin/companies/${COMPANY_ID}`, {
+      method: "DELETE",
+      headers: { "x-admin-key": "ADMIN123" },
+    });
+    expect(deleted.status).toBe(200);
+    expect(admin.deleted).toBe(COMPANY_ID);
+
+    const missing = await fetch(`${baseUrl}/api/admin/companies/${COMPANY_ID}`, {
+      method: "DELETE",
+      headers: { "x-admin-key": "ADMIN123" },
+    });
+    expect(missing.status).toBe(404);
+
+    const missingSuspend = await fetch(`${baseUrl}/api/admin/companies/33333333-3333-3333-3333-333333333333/suspend`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ reason: "test" }),
+    });
+    expect(missingSuspend.status).toBe(404);
+  });
+
+  it("explains when the suspension migration has not been applied", async () => {
+    const secondServer = createApiServer({
+      dataDir: harness.dataDir,
+      agent: harness.agent,
+      adminKey: "ADMIN123",
+      admin: new StaleSchemaAdmin(),
+    });
+    await new Promise<void>((resolve) => secondServer.listen(0, "127.0.0.1", resolve));
+    const address = secondServer.address() as AddressInfo;
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:${address.port}/api/admin/companies/${COMPANY_ID}/suspend`,
+        {
+          method: "POST",
+          headers: { "x-admin-key": "ADMIN123", "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: "test" }),
+        },
+      );
+      expect(response.status).toBe(503);
+      expect(((await response.json()) as { error: string }).error).toContain("20261028190000");
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        secondServer.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  });
+
+  it("falls back to legacy columns before the suspension migration is applied", async () => {
+    const fetcher: typeof fetch = async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/auth/v1/admin/users")) return Response.json({ users: [] });
+      if (url.pathname.endsWith("/rest/v1/companies")) {
+        if (url.searchParams.get("select")?.includes("suspended_at")) {
+          return new Response(
+            JSON.stringify({ message: "column companies.suspended_at does not exist" }),
+            { status: 400 },
+          );
+        }
+        return Response.json([{
+          id: COMPANY_ID,
+          name: "APEX",
+          owner_id: "c6e96d4b-a4db-4a5e-b930-2d666bb59dcb",
+          address: "Vilnius",
+          phone: "+370 600 00000",
+          plan_code: "pending",
+          paid_at: null,
+          created_at: "2026-10-28T16:00:00.000Z",
+        }]);
+      }
+      return Response.json([]);
+    };
+    const supabase = new SupabaseAdmin(
+      { url: "https://test-project.supabase.co", key: "sb_secret_test_only" },
+      fetcher,
+    );
+    const companies = await supabase.listCompanies();
+    expect(companies).toHaveLength(1);
+    expect(companies[0]?.name).toBe("APEX");
+    expect(companies[0]?.suspendedAt).toBeNull();
+    expect(companies[0]?.suspendedReason).toBe("");
+  });
+
+  it("maps a rejected Supabase column to the schema hint", async () => {
+    const fetcher: typeof fetch = async (_input, init) => {
+      if (init?.method === "PATCH") {
+        return new Response(
+          JSON.stringify({ message: "column companies.suspended_at does not exist" }),
+          { status: 400 },
+        );
+      }
+      return Response.json([]);
+    };
+    const supabase = new SupabaseAdmin(
+      { url: "https://test-project.supabase.co", key: "sb_secret_test_only" },
+      fetcher,
+    );
+    await expect(supabase.suspendCompany(COMPANY_ID, "test")).rejects.toBeInstanceOf(
+      AdminSchemaOutdatedError,
+    );
   });
 
   it("returns 503 when ADMIN_KEY is not configured", async () => {

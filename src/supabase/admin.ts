@@ -14,6 +14,7 @@ export interface AdminStats {
   services: number;
   specialists: number;
   paidCompanies: number;
+  suspendedCompanies: number;
 }
 
 export interface AdminCompany {
@@ -25,6 +26,8 @@ export interface AdminCompany {
   phone: string;
   planCode: PlanCode;
   paidAt: string | null;
+  suspendedAt: string | null;
+  suspendedReason: string;
   createdAt: string;
   appointments: number;
   calls: number;
@@ -61,8 +64,25 @@ export interface AdminDataSource {
   overview(): Promise<{ stats: AdminStats; companies: AdminCompany[] }>;
   listCompanies(): Promise<AdminCompany[]>;
   updateCompanyPlan(id: string, planCode: PlanCode): Promise<AdminCompany | undefined>;
+  suspendCompany(id: string, reason: string): Promise<AdminCompany | undefined>;
+  restoreCompany(id: string): Promise<AdminCompany | undefined>;
+  deleteCompany(id: string): Promise<boolean>;
   listAppointments(limit?: number): Promise<AdminAppointment[]>;
   listCalls(limit?: number): Promise<AdminCall[]>;
+}
+
+/**
+ * Raised when Supabase rejects the suspension columns, which means the
+ * 20261028190000_admin_company_controls migration has not been applied yet.
+ */
+export class AdminSchemaOutdatedError extends Error {
+  constructor() {
+    super(
+      "Blokavimo funkcijai reikia pritaikyti migraciją " +
+        "supabase/migrations/20261028190000_admin_company_controls.sql.",
+    );
+    this.name = "AdminSchemaOutdatedError";
+  }
 }
 
 interface SupabaseAdminConfig {
@@ -78,6 +98,8 @@ interface CompanyRow {
   phone?: string | null;
   plan_code?: string | null;
   paid_at?: string | null;
+  suspended_at?: string | null;
+  suspended_reason?: string | null;
   created_at: string;
   appointments?: Array<{ count?: number }>;
   business_calls?: Array<{ count?: number }>;
@@ -115,7 +137,8 @@ interface CallRow {
   companies?: { name?: string | null } | null;
 }
 
-const COMPANY_COLUMNS = "id,name,owner_id,address,phone,plan_code,paid_at,created_at,appointments(count),business_calls(count),business_services(count),specialists(count)";
+const COMPANY_COLUMNS = "id,name,owner_id,address,phone,plan_code,paid_at,suspended_at,suspended_reason,created_at,appointments(count),business_calls(count),business_services(count),specialists(count)";
+const LEGACY_COMPANY_COLUMNS = "id,name,owner_id,address,phone,plan_code,paid_at,created_at,appointments(count),business_calls(count),business_services(count),specialists(count)";
 
 /**
  * Server-only Supabase client for the administrator dashboard. It deliberately
@@ -146,6 +169,7 @@ export class SupabaseAdmin implements AdminDataSource {
         services,
         specialists,
         paidCompanies: companies.filter((company) => company.planCode !== "pending").length,
+        suspendedCompanies: companies.filter((company) => company.suspendedAt !== null).length,
       },
       companies,
     };
@@ -153,9 +177,7 @@ export class SupabaseAdmin implements AdminDataSource {
 
   async listCompanies(): Promise<AdminCompany[]> {
     const [rows, users] = await Promise.all([
-      this.json<CompanyRow[]>(
-        `/rest/v1/companies?select=${COMPANY_COLUMNS}&order=created_at.desc&limit=500`,
-      ),
+      this.companyRows("&order=created_at.desc&limit=500"),
       this.users().catch(() => [] as AuthUserRow[]),
     ]);
     const emails = new Map(users.map((user) => [user.id, user.email ?? null]));
@@ -176,15 +198,78 @@ export class SupabaseAdmin implements AdminDataSource {
     );
     if (!changed[0]) return undefined;
 
+    return this.company(id);
+  }
+
+  async suspendCompany(id: string, reason: string): Promise<AdminCompany | undefined> {
+    const changed = await this.patchCompany(id, {
+      suspended_at: new Date().toISOString(),
+      suspended_reason: reason.trim().slice(0, 500),
+    });
+    if (!changed[0]) return undefined;
+
+    return this.company(id);
+  }
+
+  async restoreCompany(id: string): Promise<AdminCompany | undefined> {
+    const changed = await this.patchCompany(id, { suspended_at: null, suspended_reason: "" });
+    if (!changed[0]) return undefined;
+
+    return this.company(id);
+  }
+
+  async deleteCompany(id: string): Promise<boolean> {
+    const deleted = await this.json<Array<{ id: string }>>(
+      `/rest/v1/companies?id=eq.${encodeURIComponent(id)}&select=id`,
+      { method: "DELETE", headers: { Prefer: "return=representation" } },
+    );
+    return Array.isArray(deleted) && deleted.length > 0;
+  }
+
+  private async patchCompany(
+    id: string,
+    fields: Record<string, unknown>,
+  ): Promise<Array<{ id: string }>> {
+    try {
+      return await this.json<Array<{ id: string }>>(
+        `/rest/v1/companies?id=eq.${encodeURIComponent(id)}&select=id`,
+        {
+          method: "PATCH",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify(fields),
+        },
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("HTTP 400")) {
+        throw new AdminSchemaOutdatedError();
+      }
+      throw error;
+    }
+  }
+
+  private async company(id: string): Promise<AdminCompany | undefined> {
     const [rows, users] = await Promise.all([
-      this.json<CompanyRow[]>(
-        `/rest/v1/companies?id=eq.${encodeURIComponent(id)}&select=${COMPANY_COLUMNS}&limit=1`,
-      ),
+      this.companyRows(`&id=eq.${encodeURIComponent(id)}&limit=1`),
       this.users().catch(() => [] as AuthUserRow[]),
     ]);
     const row = rows[0];
     if (!row) return undefined;
     return this.toCompany(row, users.find((user) => user.id === row.owner_id)?.email ?? null);
+  }
+
+  /**
+   * Reads companies with the suspension columns. Before the
+   * 20261028190000_admin_company_controls migration is applied, Supabase
+   * rejects those columns, so fall back to the original set and treat every
+   * business as active instead of failing the whole dashboard.
+   */
+  private async companyRows(suffix: string): Promise<CompanyRow[]> {
+    try {
+      return await this.json<CompanyRow[]>(`/rest/v1/companies?select=${COMPANY_COLUMNS}${suffix}`);
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes("HTTP 400")) throw error;
+      return this.json<CompanyRow[]>(`/rest/v1/companies?select=${LEGACY_COMPANY_COLUMNS}${suffix}`);
+    }
   }
 
   async listAppointments(limit = 100): Promise<AdminAppointment[]> {
@@ -232,6 +317,8 @@ export class SupabaseAdmin implements AdminDataSource {
       phone: row.phone ?? "",
       planCode: isPlanCode(row.plan_code) ? row.plan_code : "pending",
       paidAt: row.paid_at ?? null,
+      suspendedAt: row.suspended_at ?? null,
+      suspendedReason: row.suspended_reason ?? "",
       createdAt: row.created_at,
       appointments: embeddedCount(row.appointments),
       calls: embeddedCount(row.business_calls),

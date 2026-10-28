@@ -94,6 +94,8 @@ describe("HTTP API", () => {
     expect(html).toContain("renderCalendar");
     expect(html).toContain("New appointment");
     expect(html).toContain("appointments");
+    expect(html).toContain('id="suspended"');
+    expect(html).toContain("suspended_at");
   });
 
   it("serves the brand logo assets", async () => {

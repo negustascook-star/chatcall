@@ -4,7 +4,12 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import path from "node:path";
 import { CallAgent, CallEndedError, CallNotFoundError } from "../agent/callAgent.js";
 import { RequestService } from "../requests/requestService.js";
-import { isPlanCode, type AdminDataSource } from "../supabase/admin.js";
+import {
+  AdminSchemaOutdatedError,
+  isPlanCode,
+  type AdminCompany,
+  type AdminDataSource,
+} from "../supabase/admin.js";
 import { TenantRepository } from "../tenants/tenantRepository.js";
 
 export interface ApiDependencies {
@@ -304,6 +309,47 @@ async function routeAdmin(
     const company = await admin.updateCompanyPlan(id, record.planCode);
     if (!company) throw new HttpError(404, "Įmonė nerasta.");
     sendJson(res, 200, { company }, false);
+    return;
+  }
+
+  const suspensionMatch = url.pathname.match(/^\/api\/admin\/companies\/([^/]+)\/(suspend|restore)$/);
+  if (method === "POST" && suspensionMatch?.[1] && suspensionMatch[2]) {
+    const id = decodeURIComponent(suspensionMatch[1]);
+    if (!UUID_PATTERN.test(id)) {
+      throw new HttpError(400, "Neteisingas įmonės ID.");
+    }
+    let company: AdminCompany | undefined;
+    try {
+      if (suspensionMatch[2] === "suspend") {
+        const body = await readJsonBody(req);
+        const reason = optionalString(requireRecord(body), "reason") ?? "";
+        if (reason.length > 500) {
+          throw new HttpError(400, "Priežastis per ilga (iki 500 simbolių).");
+        }
+        company = await admin.suspendCompany(id, reason);
+      } else {
+        company = await admin.restoreCompany(id);
+      }
+    } catch (error) {
+      if (error instanceof AdminSchemaOutdatedError) {
+        throw new HttpError(503, error.message);
+      }
+      throw error;
+    }
+    if (!company) throw new HttpError(404, "Įmonė nerasta.");
+    sendJson(res, 200, { company }, false);
+    return;
+  }
+
+  const companyMatch = url.pathname.match(/^\/api\/admin\/companies\/([^/]+)$/);
+  if (method === "DELETE" && companyMatch?.[1]) {
+    const id = decodeURIComponent(companyMatch[1]);
+    if (!UUID_PATTERN.test(id)) {
+      throw new HttpError(400, "Neteisingas įmonės ID.");
+    }
+    const deleted = await admin.deleteCompany(id);
+    if (!deleted) throw new HttpError(404, "Įmonė nerasta.");
+    sendJson(res, 200, { deleted: true, id }, false);
     return;
   }
 

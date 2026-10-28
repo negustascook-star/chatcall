@@ -10,13 +10,16 @@ Jei projekte `lzongluhbmyasadscuri` dar nebuvo paleista schema, Supabase
 
 1. `supabase/migrations/20261028140000_initial_autoservice.sql`
 2. `supabase/migrations/20261028170000_business_owner_app.sql`
-3. `supabase/seed.sql`
+3. `supabase/migrations/20261028190000_admin_company_controls.sql`
+4. `supabase/seed.sql`
 
 Be pirmos migracijos API negalės nuskaityti `services` ir `inventory`. Antroji
 migracija sukuria savininko aplikacijos lenteles (`companies`,
 `business_services`, `specialists`, `business_faq`, `business_inventory`,
 `business_calls`, `appointments`) ir RLS taisykles, be kurių `app.html`
-neveiks.
+neveiks. Trečioji prideda `companies.suspended_at` ir `suspended_reason`
+stulpelius bei RLS apribojimus, kuriuos naudoja administratoriaus įmonių
+blokavimas; be jos `/admin` įmonių sąrašas grąžins klaidą.
 
 ## 2. Render Web Service
 

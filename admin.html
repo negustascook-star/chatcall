@@ -20,8 +20,18 @@
     table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
     th { padding: 13px 16px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #a1a1aa; background: #18181b; }
     td { padding: 14px 16px; font-size: 12px; color: #d4d4d8; border-top: 1px solid #27272a; vertical-align: top; }
-    .tab.active { background: #fff; color: #09090b; }
+    .tab.active, .tab.active:hover, .tab.active:focus { background: #fff; color: #09090b; }
     button, a, select { transition: all .18s ease; }
+    tbody tr { transition: background .18s ease; }
+    tbody tr:hover { background: rgba(255,255,255,.025); }
+    .company-table:not(.compact) th:last-child, .company-table:not(.compact) td:last-child { position: sticky; right: 0; background: #111113; box-shadow: -12px 0 18px -18px rgba(0,0,0,.9); }
+    .company-table:not(.compact) th:last-child { background: #18181b; }
+    .company-table:not(.compact) tbody tr:hover td:last-child { background: #151518; }
+    .stat-card { transition: border-color .2s ease, transform .2s ease, background .2s ease; }
+    .stat-card:hover { border-color: rgba(139,122,255,.35); background: rgba(255,255,255,.055); transform: translateY(-1px); }
+    .fade-in { animation: fade-in .28s ease both; }
+    @keyframes fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { *, *:before, *:after { animation: none !important; transition: none !important; } }
   </style>
 </head>
 <body class="min-h-screen bg-[#09090b] text-white">
@@ -66,7 +76,7 @@
         <div>
           <div class="text-[10px] font-semibold uppercase tracking-[.22em] text-violet-400">Platformos valdymas</div>
           <h1 class="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">AIcall administratorius</h1>
-          <p class="mt-2 text-xs text-white/40">Įmonės, vizitai, skambučiai ir planų aktyvavimas.</p>
+          <p class="mt-2 text-xs text-white/40">Įmonės, vizitai, skambučiai, planai ir prieigos valdymas.</p>
         </div>
         <span class="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-semibold text-emerald-300">
           <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Serverio prieiga aktyvi
@@ -87,6 +97,21 @@
 
   <div id="toast" class="pointer-events-none fixed bottom-5 right-5 z-50 hidden rounded-xl border px-4 py-3 text-xs shadow-2xl"></div>
 
+  <div id="confirmModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-zinc-950/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="w-full max-w-md rounded-2xl border border-white/10 bg-[#111113] p-6 shadow-2xl">
+      <h2 id="confirmTitle" class="text-base font-semibold text-white"></h2>
+      <div id="confirmMessage" class="mt-3 text-xs leading-6 text-white/50"></div>
+      <label id="confirmReasonWrap" class="mt-4 hidden text-[11px] font-medium text-white/60" for="confirmReason">
+        Priežastis (neprivaloma)
+        <textarea id="confirmReason" rows="3" maxlength="500" class="field mt-2" placeholder="Pvz., nepatvirtintas mokėjimas"></textarea>
+      </label>
+      <div class="mt-6 flex justify-end gap-2">
+        <button type="button" id="confirmCancel" class="rounded-xl border border-white/15 px-4 py-2.5 text-[11px] text-white/70 hover:border-white/30 hover:text-white">Atšaukti</button>
+        <button type="button" id="confirmOk" class="rounded-xl bg-white px-4 py-2.5 text-[11px] font-semibold text-zinc-950 hover:bg-zinc-200">Patvirtinti</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const STORAGE_KEY = 'aicall.admin.key';
     const $ = (selector) => document.querySelector(selector);
@@ -99,6 +124,8 @@
     let activeTab = 'overview';
     let cache = {};
     let toastTimer;
+    let confirmResolve = null;
+    const companyFilters = { search: '', plan: '', status: '' };
 
     const tabs = [
       ['overview', 'Apžvalga'],
@@ -211,9 +238,16 @@
       }
     }
 
+    async function refreshStats() {
+      try {
+        const overview = await api('/api/admin/overview', { cache: 'no-store' });
+        renderStats(overview.stats);
+      } catch {}
+    }
+
     function renderStats(stats) {
       const cards = [
-        ['Įmonės', stats.companies, `${stats.paidCompanies} su aktyviu planu`],
+        ['Įmonės', stats.companies, `${stats.paidCompanies} su aktyviu planu${stats.suspendedCompanies ? ` · ${stats.suspendedCompanies} užblokuota` : ''}`],
         ['Vartotojai', stats.users, 'Supabase Auth'],
         ['Vizitai', stats.appointments, 'visi kalendoriai'],
         ['Skambučiai', stats.calls, 'visi įrašai'],
@@ -221,7 +255,7 @@
         ['Specialistai', stats.specialists, 'visi įrašai'],
       ];
       $('#stats').innerHTML = cards.map(([label, value, hint]) => `
-        <div class="rounded-2xl border border-white/10 bg-white/[.035] p-4">
+        <div class="stat-card rounded-2xl border border-white/10 bg-white/[.035] p-4">
           <div class="text-[10px] uppercase tracking-wider text-white/40">${esc(label)}</div>
           <div class="mt-2 text-2xl font-semibold">${Number(value) || 0}</div>
           <div class="mt-1 text-[10px] text-white/30">${esc(hint)}</div>
@@ -249,11 +283,24 @@
           </div>`;
       } else if (activeTab === 'companies') {
         $('#panel').innerHTML = `
-          <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
-            <div><h2 class="text-sm font-semibold">Įmonės</h2><p class="mt-1 text-[11px] text-white/35">Plano pakeitimas iškart aktyvuoja arba išjungia mokamas funkcijas.</p></div>
-            <span class="text-[10px] text-white/30">${(cache.companies || []).length} įrašai</span>
+          <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div><h2 class="text-sm font-semibold">Įmonės</h2><p class="mt-1 text-[11px] text-white/35">Ieškokite, keiskite planą, laikinai užblokuokite arba visam laikui ištrinkite įmonę.</p></div>
+            <div class="flex flex-wrap items-center gap-2">
+              <input id="companySearch" type="search" class="field" style="width:260px" placeholder="Ieškoti įmonės, el. pašto, telefono…" value="${esc(companyFilters.search)}" />
+              <select id="companyPlanFilter" class="field" style="width:auto">
+                <option value="">Visi planai</option>
+                ${Object.entries(PLAN_LABELS).map(([code, label]) => `<option value="${code}" ${companyFilters.plan === code ? 'selected' : ''}>${esc(label)}</option>`).join('')}
+              </select>
+              <select id="companyStatusFilter" class="field" style="width:auto">
+                <option value="">Visos būsenos</option>
+                <option value="active" ${companyFilters.status === 'active' ? 'selected' : ''}>Aktyvios</option>
+                <option value="suspended" ${companyFilters.status === 'suspended' ? 'selected' : ''}>Užblokuotos</option>
+              </select>
+              <button id="exportCompanies" class="rounded-xl border border-white/15 px-3 py-2.5 text-[11px] text-white/70 hover:border-white/30 hover:text-white">↓ CSV</button>
+            </div>
           </div>
-          ${companyTable(cache.companies || [], false)}`;
+          <div id="companyTableWrap" class="fade-in"></div>`;
+        renderCompanyRows();
       } else if (activeTab === 'appointments') {
         $('#panel').innerHTML = `
           <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
@@ -271,22 +318,68 @@
       }
     }
 
+    function filteredCompanies() {
+      const query = companyFilters.search.trim().toLowerCase();
+      return (cache.companies || []).filter((company) => {
+        if (companyFilters.plan && company.planCode !== companyFilters.plan) return false;
+        if (companyFilters.status === 'active' && company.suspendedAt) return false;
+        if (companyFilters.status === 'suspended' && !company.suspendedAt) return false;
+        if (!query) return true;
+        return [company.name, company.ownerEmail, company.phone, company.address]
+          .some((value) => String(value || '').toLowerCase().includes(query));
+      });
+    }
+
+    function renderCompanyRows() {
+      const wrap = $('#companyTableWrap');
+      if (!wrap) return;
+      const all = cache.companies || [];
+      const rows = filteredCompanies();
+      wrap.innerHTML = `
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <span class="text-[10px] text-white/30">Rodoma ${rows.length} iš ${all.length} įmonių</span>
+          ${rows.some((company) => company.suspendedAt) ? '<span class="text-[10px] text-rose-300/70">Užblokuotos įmonės negali naudotis darbo aplinka</span>' : ''}
+        </div>
+        ${rows.length
+          ? companyTable(rows, false)
+          : emptyState(all.length ? 'Pagal filtrus įmonių nerasta.' : 'Įmonių dar nėra.')}`;
+    }
+
     function companyTable(companies, compact) {
       if (!companies.length) return emptyState('Įmonių dar nėra.');
-      return `<div class="table-shell"><table><thead><tr>
-        <th>Įmonė</th><th>Kontaktai</th><th>Planas</th><th>Vizitai / skambučiai</th><th>Sukurta</th>${compact ? '' : '<th></th>'}
-      </tr></thead><tbody>${companies.map((company) => `<tr>
-        <td class="whitespace-normal"><div class="font-semibold text-white">${esc(company.name)}</div><div class="mt-1 text-[10px] text-white/35">${esc(company.ownerEmail || 'El. paštas nerastas')}</div></td>
-        <td class="whitespace-normal"><div>${esc(company.phone || '—')}</div><div class="mt-1 text-[10px] text-white/35">${esc(company.address || '')}</div></td>
-        <td>${compact
+      return `<div class="table-shell"><table class="company-table${compact ? ' compact' : ''}"><thead><tr>
+        <th>Įmonė</th><th>Kontaktai</th><th>Planas</th><th>Būsena</th><th>Vizitai / skambučiai</th><th>Sukurta</th>${compact ? '' : '<th>Veiksmai</th>'}
+      </tr></thead><tbody>${companies.map((company) => {
+        const suspended = Boolean(company.suspendedAt);
+        const status = suspended
+          ? `<span class="inline-flex items-center gap-1.5 rounded-full bg-rose-500/15 px-2.5 py-1 text-[10px] font-semibold text-rose-300"><span class="h-1.5 w-1.5 rounded-full bg-rose-400"></span>Užblokuota</span>${company.suspendedReason ? `<div class="mt-1 max-w-[200px] whitespace-normal text-[10px] leading-4 text-white/35">${esc(company.suspendedReason)}</div>` : ''}`
+          : `<span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-semibold text-emerald-300"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>Aktyvi</span>`;
+        const contact = company.ownerEmail
+          ? `<button data-copy="${esc(company.ownerEmail)}" title="Kopijuoti el. paštą" class="mt-1 block max-w-[220px] truncate text-left text-[10px] text-white/35 hover:text-violet-300">${esc(company.ownerEmail)}</button>`
+          : '<div class="mt-1 text-[10px] text-white/35">El. paštas nerastas</div>';
+        const plan = compact
           ? `<span class="rounded-full bg-white/10 px-2.5 py-1 text-[10px]">${esc(PLAN_LABELS[company.planCode] || company.planCode)}</span>`
-          : `<select data-plan="${esc(company.id)}" class="rounded-lg border border-white/15 bg-[#18181b] px-2.5 py-2 text-[11px] text-white outline-none focus:border-violet-400">
-              ${Object.entries(PLAN_LABELS).map(([code, label]) => `<option value="${code}" ${company.planCode === code ? 'selected' : ''}>${esc(label)}</option>`).join('')}
-            </select>`}</td>
-        <td>${company.appointments} / ${company.calls}</td>
-        <td>${formatDate(company.createdAt)}</td>
-        ${compact ? '' : `<td><button data-save-plan="${esc(company.id)}" class="rounded-lg bg-white px-3 py-2 text-[10px] font-semibold text-zinc-950 hover:bg-zinc-200">Išsaugoti</button></td>`}
-      </tr>`).join('')}</tbody></table></div>`;
+          : `<div class="flex items-center gap-1.5">
+              <select data-plan="${esc(company.id)}" class="rounded-lg border border-white/15 bg-[#18181b] px-2.5 py-2 text-[11px] text-white outline-none focus:border-violet-400">
+                ${Object.entries(PLAN_LABELS).map(([code, label]) => `<option value="${code}" ${company.planCode === code ? 'selected' : ''}>${esc(label)}</option>`).join('')}
+              </select>
+              <button data-save-plan="${esc(company.id)}" class="rounded-lg bg-white px-2.5 py-2 text-[10px] font-semibold text-zinc-950 hover:bg-zinc-200">Išsaugoti</button>
+            </div>`;
+        const actions = compact ? '' : `<td><div class="flex items-center gap-1.5">${suspended
+          ? `<button data-restore="${esc(company.id)}" class="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-2 text-[10px] font-semibold text-emerald-300 hover:bg-emerald-500/20">Atblokuoti</button>`
+          : `<button data-suspend="${esc(company.id)}" class="rounded-lg border border-amber-400/30 bg-amber-500/10 px-2.5 py-2 text-[10px] font-semibold text-amber-200 hover:bg-amber-500/20">Užblokuoti</button>`}
+          <button data-delete="${esc(company.id)}" data-name="${esc(company.name)}" class="rounded-lg border border-rose-400/25 px-2.5 py-2 text-[10px] text-rose-300 hover:border-rose-400/50 hover:bg-rose-500/10">Ištrinti</button>
+        </div></td>`;
+        return `<tr class="${suspended ? 'bg-rose-500/[.03]' : ''}">
+          <td class="whitespace-normal"><div class="font-semibold text-white">${esc(company.name)}</div>${contact}</td>
+          <td class="whitespace-normal"><div>${esc(company.phone || '—')}</div><div class="mt-1 text-[10px] text-white/35">${esc(company.address || '')}</div></td>
+          <td>${plan}</td>
+          <td class="whitespace-normal">${status}</td>
+          <td>${company.appointments} / ${company.calls}</td>
+          <td>${formatDate(company.createdAt)}</td>
+          ${actions}
+        </tr>`;
+      }).join('')}</tbody></table></div>`;
     }
 
     function appointmentTable(appointments, compact) {
@@ -325,6 +418,77 @@
       return Number.isNaN(date.getTime()) ? '—' : dateTimeFormat.format(date);
     }
 
+    function askConfirm({ title, message, confirmLabel = 'Patvirtinti', danger = false, withReason = false }) {
+      return new Promise((resolve) => {
+        confirmResolve = resolve;
+        $('#confirmTitle').textContent = title;
+        $('#confirmMessage').innerHTML = message;
+        $('#confirmReasonWrap').classList.toggle('hidden', !withReason);
+        $('#confirmReason').value = '';
+        const ok = $('#confirmOk');
+        ok.textContent = confirmLabel;
+        ok.className = `rounded-xl px-4 py-2.5 text-[11px] font-semibold ${danger ? 'bg-rose-500 text-white hover:bg-rose-400' : 'bg-white text-zinc-950 hover:bg-zinc-200'}`;
+        const modal = $('#confirmModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        if (withReason) $('#confirmReason').focus();
+        else ok.focus();
+      });
+    }
+
+    function closeConfirm(value) {
+      const modal = $('#confirmModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      const resolve = confirmResolve;
+      confirmResolve = null;
+      if (resolve) resolve(value);
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const area = document.createElement('textarea');
+        area.value = text;
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        area.remove();
+      }
+    }
+
+    function exportCompanies() {
+      const rows = filteredCompanies();
+      if (!rows.length) return toast('Nėra ką eksportuoti.', true);
+      const header = ['Įmonė', 'Savininko el. paštas', 'Telefonas', 'Adresas', 'Planas', 'Būsena', 'Priežastis', 'Vizitai', 'Skambučiai', 'Paslaugos', 'Specialistai', 'Sukurta'];
+      const cell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+      const lines = [header, ...rows.map((company) => [
+        company.name,
+        company.ownerEmail || '',
+        company.phone || '',
+        company.address || '',
+        PLAN_LABELS[company.planCode] || company.planCode,
+        company.suspendedAt ? 'Užblokuota' : 'Aktyvi',
+        company.suspendedReason || '',
+        company.appointments,
+        company.calls,
+        company.services,
+        company.specialists,
+        formatDate(company.createdAt),
+      ])].map((row) => row.map(cell).join(';'));
+      const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `aicall-imones-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast(`Eksportuota ${rows.length} įmonių.`);
+    }
+
     $('#loginForm').addEventListener('submit', (event) => {
       event.preventDefault();
       const candidate = $('#keyInput').value.trim();
@@ -341,24 +505,135 @@
       const tabButton = event.target.closest('[data-tab]');
       if (tabButton) { load(tabButton.dataset.tab); return; }
 
+      if (event.target.closest('#exportCompanies')) { exportCompanies(); return; }
+
+      const copyButton = event.target.closest('[data-copy]');
+      if (copyButton) {
+        await copyText(copyButton.dataset.copy);
+        toast('El. paštas nukopijuotas.');
+        return;
+      }
+
       const saveButton = event.target.closest('[data-save-plan]');
-      if (!saveButton) return;
-      const id = saveButton.dataset.savePlan;
-      const select = document.querySelector(`[data-plan="${id}"]`);
-      if (!select) return;
-      saveButton.disabled = true;
-      saveButton.textContent = 'Saugoma…';
-      try {
-        await api(`/api/admin/companies/${encodeURIComponent(id)}/plan`, {
-          method: 'POST',
-          body: JSON.stringify({ planCode: select.value }),
+      if (saveButton) {
+        const id = saveButton.dataset.savePlan;
+        const select = document.querySelector(`[data-plan="${id}"]`);
+        if (!select) return;
+        saveButton.disabled = true;
+        saveButton.textContent = 'Saugoma…';
+        try {
+          await api(`/api/admin/companies/${encodeURIComponent(id)}/plan`, {
+            method: 'POST',
+            body: JSON.stringify({ planCode: select.value }),
+          });
+          toast('Planas atnaujintas.');
+          await load('companies');
+          await refreshStats();
+        } catch (error) {
+          toast(error.message, true);
+          saveButton.disabled = false;
+          saveButton.textContent = 'Išsaugoti';
+        }
+        return;
+      }
+
+      const suspendButton = event.target.closest('[data-suspend]');
+      if (suspendButton) {
+        const company = (cache.companies || []).find((entry) => entry.id === suspendButton.dataset.suspend);
+        const answer = await askConfirm({
+          title: 'Užblokuoti įmonę?',
+          message: `<strong class="text-white">${esc(company?.name || 'Įmonė')}</strong> — savininkas nematys darbo aplinkos ir negalės keisti duomenų, kol neatblokuosite. Visi duomenys išlieka saugūs.`,
+          confirmLabel: 'Užblokuoti',
+          danger: true,
+          withReason: true,
         });
-        toast('Planas atnaujintas.');
-        await load(activeTab === 'companies' ? 'companies' : 'overview');
-      } catch (error) {
-        toast(error.message, true);
-        saveButton.disabled = false;
-        saveButton.textContent = 'Išsaugoti';
+        if (!answer) return;
+        suspendButton.disabled = true;
+        suspendButton.textContent = 'Blokuojama…';
+        try {
+          await api(`/api/admin/companies/${encodeURIComponent(suspendButton.dataset.suspend)}/suspend`, {
+            method: 'POST',
+            body: JSON.stringify({ reason: answer.reason }),
+          });
+          toast('Įmonė užblokuota.');
+          await load('companies');
+          await refreshStats();
+        } catch (error) {
+          toast(error.message, true);
+          suspendButton.disabled = false;
+          suspendButton.textContent = 'Užblokuoti';
+        }
+        return;
+      }
+
+      const restoreButton = event.target.closest('[data-restore]');
+      if (restoreButton) {
+        restoreButton.disabled = true;
+        restoreButton.textContent = 'Atblokuojama…';
+        try {
+          await api(`/api/admin/companies/${encodeURIComponent(restoreButton.dataset.restore)}/restore`, { method: 'POST' });
+          toast('Įmonė atblokuota.');
+          await load('companies');
+          await refreshStats();
+        } catch (error) {
+          toast(error.message, true);
+          restoreButton.disabled = false;
+          restoreButton.textContent = 'Atblokuoti';
+        }
+        return;
+      }
+
+      const deleteButton = event.target.closest('[data-delete]');
+      if (deleteButton) {
+        const answer = await askConfirm({
+          title: 'Ištrinti įmonę visam laikui?',
+          message: `<strong class="text-white">${esc(deleteButton.dataset.name || 'Įmonė')}</strong> ir visi susiję duomenys (vizitai, skambučiai, paslaugos, specialistai) bus ištrinti negrįžtamai. Šio veiksmo atšaukti negalima.`,
+          confirmLabel: 'Ištrinti visam laikui',
+          danger: true,
+        });
+        if (!answer) return;
+        deleteButton.disabled = true;
+        deleteButton.textContent = 'Trinama…';
+        try {
+          await api(`/api/admin/companies/${encodeURIComponent(deleteButton.dataset.delete)}`, { method: 'DELETE' });
+          toast('Įmonė ištrinta.');
+          await load('companies');
+          await refreshStats();
+        } catch (error) {
+          toast(error.message, true);
+          deleteButton.disabled = false;
+          deleteButton.textContent = 'Ištrinti';
+        }
+      }
+    });
+
+    $('#panel').addEventListener('input', (event) => {
+      if (event.target.id !== 'companySearch') return;
+      companyFilters.search = event.target.value;
+      renderCompanyRows();
+    });
+
+    $('#panel').addEventListener('change', (event) => {
+      if (event.target.id === 'companyPlanFilter') companyFilters.plan = event.target.value;
+      else if (event.target.id === 'companyStatusFilter') companyFilters.status = event.target.value;
+      else return;
+      renderCompanyRows();
+    });
+
+    $('#confirmCancel').addEventListener('click', () => closeConfirm(null));
+    $('#confirmOk').addEventListener('click', () => closeConfirm({ reason: $('#confirmReason').value.trim() }));
+    $('#confirmModal').addEventListener('click', (event) => {
+      if (event.target === $('#confirmModal')) closeConfirm(null);
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !$('#confirmModal').classList.contains('hidden')) {
+        closeConfirm(null);
+        return;
+      }
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
+      if (event.key === '/' && !typing && activeTab === 'companies') {
+        const search = $('#companySearch');
+        if (search) { event.preventDefault(); search.focus(); }
       }
     });
 
