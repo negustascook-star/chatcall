@@ -4,6 +4,7 @@ import path from "node:path";
 import { CallAgent, CallEndedError, CallNotFoundError } from "../agent/callAgent.js";
 import { RequestService } from "../requests/requestService.js";
 import { TenantRepository } from "../tenants/tenantRepository.js";
+import { localizeHtml, resolveSiteLanguage } from "./localization.js";
 
 export interface ApiDependencies {
   dataDir: string;
@@ -86,17 +87,17 @@ async function route(
   }
 
   if (method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
-    await sendWebsite(res, websiteFile);
+    await sendWebsite(req, res, websiteFile);
     return;
   }
 
   if (method === "GET" && url.pathname === "/auth.html") {
-    await sendWebsite(res, authFile);
+    await sendWebsite(req, res, authFile);
     return;
   }
 
   if (method === "GET" && url.pathname === "/app.html") {
-    await sendWebsite(res, appFile);
+    await sendWebsite(req, res, appFile);
     return;
   }
 
@@ -253,7 +254,7 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   });
 }
 
-async function sendWebsite(res: ServerResponse, file: string): Promise<void> {
+async function sendWebsite(req: IncomingMessage, res: ServerResponse, file: string): Promise<void> {
   let html: Buffer;
   try {
     html = await readFile(file);
@@ -264,13 +265,14 @@ async function sendWebsite(res: ServerResponse, file: string): Promise<void> {
     throw error;
   }
 
+  const localizedHtml = localizeHtml(html, await resolveSiteLanguage(req));
   res.writeHead(200, {
     "Content-Type": "text/html; charset=utf-8",
-    "Content-Length": html.byteLength,
-    "Cache-Control": "no-cache",
+    "Content-Length": localizedHtml.byteLength,
+    "Cache-Control": "private, no-store",
     "X-Content-Type-Options": "nosniff",
   });
-  res.end(html);
+  res.end(localizedHtml);
 }
 
 function sendJson(res: ServerResponse, status: number, payload: unknown): void {
