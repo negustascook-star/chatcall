@@ -12,6 +12,7 @@
     "demo:auto": "tsx src/cli/demo-auto.ts",
     "api": "tsx src/api/index.ts",
     "elevenlabs:audit": "tsx src/cli/elevenlabs-audit.ts",
+    "twilio:audit": "tsx src/cli/twilio-audit.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"

@@ -188,6 +188,10 @@ API raktas kuriamas taip:
 6. Įrašykite į `chatcall/.env`:
    `ELEVENLABS_API_KEY=sk_...`
 
+Jei `.env` įrašymas nepavyksta, paleiskite dukart spustelėdami
+`chatcall\scripts\set-elevenlabs-key.cmd` – jis paprašys rakto ir įrašys jį
+pats (raktas nebus rodomas ekrane).
+
 ### Twilio (jei reikia +370 numerio)
 
 | Ką | Kur |
