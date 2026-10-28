@@ -12,6 +12,10 @@ export interface ApiDependencies {
   catalogSource?: "json" | "supabase";
   websiteFile?: string;
   authFile?: string;
+  appFile?: string;
+  supabaseUrl?: string;
+  supabasePublicKey?: string;
+  warehousePlanPriceEur?: number;
 }
 
 class HttpError extends Error {
@@ -29,10 +33,11 @@ export function createApiServer(deps: ApiDependencies): Server {
   const requests = new RequestService(deps.dataDir);
   const websiteFile = deps.websiteFile ?? path.resolve(process.cwd(), "index.html");
   const authFile = deps.authFile ?? path.join(path.dirname(websiteFile), "auth.html");
+  const appFile = deps.appFile ?? path.join(path.dirname(websiteFile), "app.html");
 
   return createServer(async (req, res) => {
     try {
-      await route(req, res, deps.agent, tenants, requests, deps.catalogSource ?? "json", websiteFile, authFile);
+      await route(req, res, deps.agent, tenants, requests, deps.catalogSource ?? "json", websiteFile, authFile, appFile, deps.supabaseUrl, deps.supabasePublicKey, deps.warehousePlanPriceEur);
     } catch (error) {
       if (res.headersSent) {
         res.end();
@@ -67,6 +72,10 @@ async function route(
   catalogSource: "json" | "supabase",
   websiteFile: string,
   authFile: string,
+  appFile: string,
+  supabaseUrl?: string,
+  supabasePublicKey?: string,
+  warehousePlanPriceEur?: number,
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -83,6 +92,16 @@ async function route(
 
   if (method === "GET" && url.pathname === "/auth.html") {
     await sendWebsite(res, authFile);
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/app.html") {
+    await sendWebsite(res, appFile);
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/api/public-config") {
+    sendJson(res, 200, { supabaseUrl: supabaseUrl ?? null, supabasePublicKey: supabasePublicKey ?? null, warehousePlanPriceEur: warehousePlanPriceEur ?? null });
     return;
   }
 

@@ -28,7 +28,19 @@ const tenants = new TenantRepository(dataDir, supabase ? {
 } : {});
 const agent = new CallAgent({ dataDir, tenants });
 const websiteFile = path.resolve(process.cwd(), "index.html");
-const server = createApiServer({ dataDir, agent, tenants, catalogSource, websiteFile });
+const publicKey = process.env.SUPABASE_PUBLISHABLE_KEY?.trim() || process.env.SUPABASE_ANON_KEY?.trim();
+const supabaseUrl = process.env.SUPABASE_URL?.trim();
+const configuredWarehousePrice = process.env.WAREHOUSE_PLAN_PRICE_EUR?.trim();
+const warehousePlanPriceEur = configuredWarehousePrice && /^\d+(\.\d{1,2})?$/.test(configuredWarehousePrice)
+  ? Number(configuredWarehousePrice)
+  : undefined;
+const validWarehousePrice = warehousePlanPriceEur && warehousePlanPriceEur > 200 ? warehousePlanPriceEur : undefined;
+const server = createApiServer({
+  dataDir, agent, tenants, catalogSource, websiteFile, supabaseUrl,
+  // This must be a browser-safe publishable/anon key. Never expose the secret key.
+  supabasePublicKey: publicKey,
+  warehousePlanPriceEur: validWarehousePrice,
+});
 
 server.listen(port, () => {
   console.log(`Chatcall API veikia: http://localhost:${port}`);

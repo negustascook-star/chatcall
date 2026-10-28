@@ -245,3 +245,9 @@ Repo šaknyje esantis `index.html` pateikia Aical produkto svetainę ir bandomą
 `auth.html` pateikia atskirą prisijungimo / registracijos puslapio dizainą. Svetainės „Log in“ ir „Get started“ nuorodos jį atidaro, o API serveris aptarnauja šį failą per `/auth.html`. Autentifikacija ir nukreipimas į pagrindinę aplikaciją bus prijungti vėliau.
 
 Paleisk API (`npm install`, tada `npm run api`) ir atidaryk `http://localhost:3000/` – tame pačiame serveryje atiduodama ir `index.html` svetainė. Jei puslapis publikuojamas atskirai, nurodyk viešai pasiekiamą API adresą; GitHub Pages pats backend’o nepaleidžia. API šiuo metu yra demo režimo, be autentifikacijos, todėl jos nereikėtų atverti viešam naudojimui neįdiegus saugumo priemonių.
+
+## AIcall verslo aplinka
+
+Savininkų prisijungimas ir verslo duomenys naudoja Supabase Auth bei RLS. Prieš diegiant reikia pritaikyti migraciją `supabase/migrations/20261028170000_business_owner_app.sql` ir nustatyti `SUPABASE_URL` bei `SUPABASE_PUBLISHABLE_KEY` (naršyklei skirtas raktas; `SUPABASE_SECRET_KEY` lieka tik serveryje). `WAREHOUSE_PLAN_PRICE_EUR` yra pasirenkama platformos administratoriaus konfigūracija; jos nenustačius svetainė rodo „Susisiekite dėl kainos“.
+
+Mokėjimų tiekėjas, telefonija ir tiekėjų katalogai šiame diegime dar neprijungti. Todėl pasirinktas planas paskyroje lieka neaktyvus, skambučių / rezervacijų skiltyse rodomos tik realios DB eilutės, o tiekėjo informacija nepateikiama kaip gyva.

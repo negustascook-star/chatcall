@@ -17,6 +17,11 @@ services:
         value: https://lzongluhbmyasadscuri.supabase.co
       - key: SUPABASE_TENANT_ID
         value: demo-tire
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      # Optional; keep unset until platform administrator configures this price.
+      - key: WAREHOUSE_PLAN_PRICE_EUR
+        sync: false
       # Render parodys lauką raktui įvesti. Niekada necommitinkite jo į Git.
       - key: SUPABASE_SECRET_KEY
         sync: false
