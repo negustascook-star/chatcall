@@ -1,0 +1,54 @@
+[
+  {
+    "id": "tire-installation",
+    "name": "Padangų montavimas",
+    "description": "Padangų permontavimas ir ratų balansavimas.",
+    "priceFrom": 40,
+    "priceUnit": "už 4 padangas",
+    "durationMinutes": 60,
+    "keywords": ["montavim", "permontavim", "padangu montavim", "montuoti", "persiauti", "perauti"]
+  },
+  {
+    "id": "wheel-balancing",
+    "name": "Ratų balansavimas",
+    "description": "Ratų balansavimas montavimo metu arba atskirai.",
+    "priceFrom": 8,
+    "priceUnit": "už ratą",
+    "durationMinutes": 20,
+    "keywords": ["balansavim", "balansuoti", "ratu balansavim"]
+  },
+  {
+    "id": "wheel-alignment",
+    "name": "Ratų suvedimas",
+    "description": "Ratų suvedimo reguliavimas.",
+    "priceFrom": 45,
+    "priceUnit": "už automobilį",
+    "durationMinutes": 45,
+    "keywords": ["suvadinim", "suvedim", "ratu suvedim", "suvidim", "reguliavim"]
+  },
+  {
+    "id": "tire-repair",
+    "name": "Padangų remontas",
+    "description": "Pramuštos padangos remontas ir vulkanizavimas.",
+    "priceFrom": 25,
+    "durationMinutes": 30,
+    "keywords": ["remont", "vulkanizavim", "dure", "pramusim", "padangos remont"]
+  },
+  {
+    "id": "rim-straightening",
+    "name": "Ratlankių tiesinimas",
+    "description": "Deformuotų ratlankių tiesinimas.",
+    "priceFrom": 35,
+    "priceUnit": "už ratlankį",
+    "durationMinutes": 40,
+    "keywords": ["ratlankiu tiesinim", "tiesinim", "ratlankis", "diskas"]
+  },
+  {
+    "id": "tire-storage",
+    "name": "Sezoninis padangų saugojimas",
+    "description": "Padangų saugojimas iki kito sezono.",
+    "priceFrom": 40,
+    "priceUnit": "už sezoną",
+    "keywords": ["saugojim", "padangu saugojim", "sezoninis saugojim"]
+  }
+]

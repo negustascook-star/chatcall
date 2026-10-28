@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+
+# Real customer data must never be committed.
+data/tenants/*/requests/*
+data/tenants/*/calls/*
+!data/tenants/*/requests/.gitkeep
+!data/tenants/*/calls/.gitkeep

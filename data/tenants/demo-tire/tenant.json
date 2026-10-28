@@ -1,0 +1,13 @@
+{
+  "id": "demo-tire",
+  "name": "Padangų centras",
+  "legalName": "UAB Padangų centras",
+  "phone": "+370 600 00000",
+  "greeting": "Sveiki, čia Padangų centras. Kuo galiu padėti?",
+  "language": "lt-LT",
+  "timezone": "Europe/Vilnius",
+  "address": "Vilniaus g. 1, Vilnius (įvažiavimas iš kiemo pusės)",
+  "hours": "I–V 8:00–18:00, VI 9:00–14:00, VII nedirbame",
+  "transferPhone": "+370 600 00001",
+  "email": "info@padangucentras.lt"
+}

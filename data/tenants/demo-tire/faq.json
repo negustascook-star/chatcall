@@ -1,0 +1,62 @@
+[
+  {
+    "id": "working-hours",
+    "question": "Koks jūsų darbo laikas?",
+    "answer": "Dirbame I–V 8:00–18:00, šeštadienį 9:00–14:00, sekmadienį nedirbame.",
+    "keywords": ["darbo laikas", "dirbat", "dirbate", "iki kada", "nuo kada", "sekmadieni", "sestadieni", "kada dirbate"]
+  },
+  {
+    "id": "address",
+    "question": "Kur jūs esate?",
+    "answer": "Esame Vilniaus g. 1, Vilniuje. Įvažiavimas iš kiemo pusės.",
+    "keywords": ["adresas", "kur esate", "kur esat", "kur randates", "vieta", "kaip atrasti", "kur jus"]
+  },
+  {
+    "id": "installation-price",
+    "question": "Kiek kainuoja padangų montavimas?",
+    "answer": "4 padangų montavimas ir balansavimas – nuo 40 €. Jei atvykstate su savo padangomis, montavimas taip pat nuo 40 €.",
+    "keywords": ["montavimo kaina", "kiek kainuoja montavimas", "montavimas kaina", "kaina uz montavima", "montavimo kainos"]
+  },
+  {
+    "id": "warranty",
+    "question": "Ar suteikiate garantiją?",
+    "answer": "Padangoms taikoma gamintojo garantija, montavimo darbams – 6 mėn. garantija.",
+    "keywords": ["garantija", "garantijos", "garantinis", "garantija montavimui"]
+  },
+  {
+    "id": "payment",
+    "question": "Kaip galima atsiskaityti?",
+    "answer": "Atsiskaitome grynaisiais, kortele arba banko pavedimu. Įmonėms išrašome sąskaitą.",
+    "keywords": ["atsiskaitymas", "moketi", "mokejimas", "kortele", "grynaisiais", "saskaita", "pavedimu"]
+  },
+  {
+    "id": "tire-storage",
+    "question": "Ar saugote padangas?",
+    "answer": "Taip, sezoninis padangų saugojimas kainuoja 40 € sezonui.",
+    "keywords": ["saugojimas", "saugoti padangas", "sezoninis saugojimas", "ar saugote"]
+  },
+  {
+    "id": "duration",
+    "question": "Kiek trunka montavimas?",
+    "answer": "Padangų montavimas trunka apie 1 valandą.",
+    "keywords": ["kiek trunka", "trukme", "montavimas trunka", "kiek laiko uztruks"]
+  },
+  {
+    "id": "registration",
+    "question": "Ar reikia registruotis?",
+    "answer": "Rekomenduojame užsiregistruoti, bet priimame ir be registracijos, jei yra laisvų laikų.",
+    "keywords": ["registracija", "registruotis", "ar reikia registruotis", "eile", "be registracijos"]
+  },
+  {
+    "id": "own-tires",
+    "question": "Ar montuojate savo padangas?",
+    "answer": "Taip, galite atvykti su savo padangomis. Montavimas – nuo 40 €.",
+    "keywords": ["savo padangas", "su savo padangom", "ar montuojate savo", "turimas padangas"]
+  },
+  {
+    "id": "rims",
+    "question": "Ar turite ratlankių?",
+    "answer": "Ratlankių turime pagal sandėlį. Pasakykite automobilio modelį ir reikiamą dydį – patikrinsime.",
+    "keywords": ["ratlankiai", "ratlankiu", "diskai", "disku"]
+  }
+]
