@@ -53,6 +53,11 @@ const ADMIN_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 const ADMIN_MAX_ATTEMPTS = 10;
 const adminAttempts = new Map<string, { count: number; resetAt: number }>();
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Static brand assets served next to the HTML pages. */
+const STATIC_ASSETS: Record<string, string> = {
+  "/logo.svg": "image/svg+xml",
+  "/logo-mark.svg": "image/svg+xml",
+};
 
 export function createApiServer(deps: ApiDependencies): Server {
   const tenants = deps.tenants ?? new TenantRepository(deps.dataDir);
@@ -150,6 +155,12 @@ async function route(
 
   if (method === "GET" && url.pathname === "/i18n.js") {
     await sendJavaScript(res, path.join(path.dirname(ctx.websiteFile), "i18n.js"));
+    return;
+  }
+
+  const assetType = STATIC_ASSETS[url.pathname];
+  if (method === "GET" && assetType) {
+    await sendAsset(res, path.join(path.dirname(ctx.websiteFile), url.pathname.slice(1)), assetType);
     return;
   }
 
@@ -450,6 +461,25 @@ async function sendJavaScript(res: ServerResponse, file: string): Promise<void> 
     "X-Content-Type-Options": "nosniff",
   });
   res.end(script);
+}
+
+async function sendAsset(res: ServerResponse, file: string, contentType: string): Promise<void> {
+  let data: Buffer;
+  try {
+    data = await readFile(file);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new HttpError(404, "Failas nerastas.");
+    }
+    throw error;
+  }
+  res.writeHead(200, {
+    "Content-Type": contentType,
+    "Content-Length": data.byteLength,
+    "Cache-Control": "public, max-age=3600",
+    "X-Content-Type-Options": "nosniff",
+  });
+  res.end(data);
 }
 
 function sendJson(res: ServerResponse, status: number, payload: unknown, cors = true): void {

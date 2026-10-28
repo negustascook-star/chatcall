@@ -96,6 +96,13 @@ describe("HTTP API", () => {
     expect(html).toContain("appointments");
   });
 
+  it("serves the brand logo assets", async () => {
+    const response = await fetch(`${baseUrl}/logo-mark.svg`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("image/svg+xml");
+    expect(await response.text()).toContain("<svg");
+  });
+
   it("returns useful errors", async () => {
     const missingTenant = await fetch(`${baseUrl}/api/calls`, {
       method: "POST",

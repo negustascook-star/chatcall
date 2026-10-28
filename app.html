@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#09090b" />
   <script src="./i18n.js" defer></script>
   <title>AIcall Business Workspace</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='40' y2='40' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23a78bfa'/%3E%3Cstop offset='.52' stop-color='%237c5cf5'/%3E%3Cstop offset='1' stop-color='%234c1d95'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='40' height='40' rx='12' fill='url(%23g)'/%3E%3Cpath transform='translate(8.5 11) scale(.9)' fill='%23fff' d='M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 2.8a2 2 0 0 1-.6 1.7L7.2 10a16 16 0 0 0 6 6l1.8-1.8a2 2 0 0 1 1.7-.6l2.8.5a2 2 0 0 1 1.7 1.8z'/%3E%3C/svg%3E" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,6 +19,7 @@
     .calendar-scroll { scrollbar-width: thin; }
     .appointment-chip { transition: background .15s ease, border-color .15s ease; }
     .appointment-chip:hover { filter: brightness(.97); }
+    :focus-visible { outline: 2px solid #8b7aff; outline-offset: 2px; }
   </style>
 </head>
 <body class="min-h-screen bg-[#f7f7f9] text-zinc-900">
@@ -25,9 +27,9 @@
 
   <div id="app" class="hidden min-h-screen flex flex-col md:flex-row">
     <aside class="w-full shrink-0 border-b border-zinc-200 bg-white p-4 md:w-64 md:border-b-0 md:border-r md:p-5">
-      <a href="/" class="flex items-center gap-2 text-lg font-bold tracking-tight">
-        <span class="grid h-10 w-10 place-items-center rounded-xl bg-[#7054ee] text-sm text-white">A</span>
-        AIcall
+      <a href="/" class="flex items-center gap-2.5 rounded-xl transition hover:opacity-80">
+        <svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true" class="shrink-0"><defs><linearGradient id="aiAppGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#a78bfa"/><stop offset=".52" stop-color="#7c5cf5"/><stop offset="1" stop-color="#4c1d95"/></linearGradient></defs><rect width="40" height="40" rx="12" fill="url(#aiAppGrad)"/><path transform="translate(8.5 11) scale(.9)" fill="#fff" d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 2.8a2 2 0 0 1-.6 1.7L7.2 10a16 16 0 0 0 6 6l1.8-1.8a2 2 0 0 1 1.7-.6l2.8.5a2 2 0 0 1 1.7 1.8z"/><path fill="#fff" fill-opacity=".92" d="M31.5 4.3l1.15 2.75 2.75 1.15-2.75 1.15L31.5 12.1l-1.15-2.75L27.6 8.2l2.75-1.15z"/></svg>
+        <span class="text-lg font-bold tracking-tight text-zinc-900"><span class="text-violet-600">AI</span>call</span>
       </a>
       <div class="mt-4 rounded-xl border border-zinc-100 bg-zinc-50 p-3">
         <div id="companyLabel" class="truncate text-xs font-semibold">My business</div>
