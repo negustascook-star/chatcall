@@ -67,6 +67,7 @@
   "Sample conversation · demo": "Pavyzdinis pokalbis · demonstracija",
   "businesses": "verslai",
   "business": "verslas",
+  "· sample data": "· pavyzdiniai duomenys",
   "Sample business": "Pavyzdinis verslas",
   "No sample businesses returned by API": "API nepateikė pavyzdinių verslų",
   "Start a demo conversation": "Pradėti demonstracinį pokalbį",
