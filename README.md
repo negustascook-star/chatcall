@@ -242,6 +242,6 @@ Dengiama:
 
 Repo šaknyje esantis `index.html` pateikia Aical produkto svetainę ir bandomąjį pokalbį su ChatCall verslo logika. Frontendas naudoja `GET /api/tenants`, `POST /api/calls`, `POST /api/calls/:id/messages` ir `POST /api/calls/:id/end` maršrutus. API adresą galima pakeisti svetainės „API prisijungimas“ laukelyje.
 
-`auth.html` pateikia atskirą prisijungimo / registracijos puslapio dizainą. Svetainės „Log in“ ir „Get started“ nuorodos jį atidaro. Autentifikacija ir nukreipimas į pagrindinę aplikaciją bus prijungti vėliau.
+`auth.html` pateikia atskirą prisijungimo / registracijos puslapio dizainą. Svetainės „Log in“ ir „Get started“ nuorodos jį atidaro, o API serveris aptarnauja šį failą per `/auth.html`. Autentifikacija ir nukreipimas į pagrindinę aplikaciją bus prijungti vėliau.
 
 Paleisk API (`npm install`, tada `npm run api`) ir atidaryk `http://localhost:3000/` – tame pačiame serveryje atiduodama ir `index.html` svetainė. Jei puslapis publikuojamas atskirai, nurodyk viešai pasiekiamą API adresą; GitHub Pages pats backend’o nepaleidžia. API šiuo metu yra demo režimo, be autentifikacijos, todėl jos nereikėtų atverti viešam naudojimui neįdiegus saugumo priemonių.

@@ -11,6 +11,7 @@ export interface ApiDependencies {
   tenants?: TenantRepository;
   catalogSource?: "json" | "supabase";
   websiteFile?: string;
+  authFile?: string;
 }
 
 class HttpError extends Error {
@@ -27,10 +28,11 @@ export function createApiServer(deps: ApiDependencies): Server {
   const tenants = deps.tenants ?? new TenantRepository(deps.dataDir);
   const requests = new RequestService(deps.dataDir);
   const websiteFile = deps.websiteFile ?? path.resolve(process.cwd(), "index.html");
+  const authFile = deps.authFile ?? path.join(path.dirname(websiteFile), "auth.html");
 
   return createServer(async (req, res) => {
     try {
-      await route(req, res, deps.agent, tenants, requests, deps.catalogSource ?? "json", websiteFile);
+      await route(req, res, deps.agent, tenants, requests, deps.catalogSource ?? "json", websiteFile, authFile);
     } catch (error) {
       if (res.headersSent) {
         res.end();
@@ -64,6 +66,7 @@ async function route(
   requests: RequestService,
   catalogSource: "json" | "supabase",
   websiteFile: string,
+  authFile: string,
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -75,6 +78,11 @@ async function route(
 
   if (method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
     await sendWebsite(res, websiteFile);
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/auth.html") {
+    await sendWebsite(res, authFile);
     return;
   }
 
