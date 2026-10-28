@@ -242,4 +242,4 @@ Dengiama:
 
 Repo šaknyje esantis `index.html` pateikia Aical produkto svetainę ir bandomąjį pokalbį su ChatCall verslo logika. Frontendas naudoja `GET /api/tenants`, `POST /api/calls`, `POST /api/calls/:id/messages` ir `POST /api/calls/:id/end` maršrutus. API adresą galima pakeisti svetainės „API prisijungimas“ laukelyje.
 
-Paleisk API įprastai (`npm install`, tada `npm run api`) ir atidaryk `index.html` naršyklėje. Jei puslapis publikuojamas atskirai, nurodyk viešai pasiekiamą API adresą; GitHub Pages pats backend’o nepaleidžia. API šiuo metu yra demo režimo, be autentifikacijos, todėl jos nereikėtų atverti viešam naudojimui neįdiegus saugumo priemonių.
+Paleisk API (`npm install`, tada `npm run api`) ir atidaryk `http://localhost:3000/` – tame pačiame serveryje atiduodama ir `index.html` svetainė. Jei puslapis publikuojamas atskirai, nurodyk viešai pasiekiamą API adresą; GitHub Pages pats backend’o nepaleidžia. API šiuo metu yra demo režimo, be autentifikacijos, todėl jos nereikėtų atverti viešam naudojimui neįdiegus saugumo priemonių.

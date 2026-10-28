@@ -80,6 +80,13 @@ describe("HTTP API", () => {
     expect(requests.requests).toHaveLength(0);
   });
 
+  it("serves the demo website at the root", async () => {
+    const response = await fetch(`${baseUrl}/`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    expect(await response.text()).toContain("Aical");
+  });
+
   it("returns useful errors", async () => {
     const missingTenant = await fetch(`${baseUrl}/api/calls`, {
       method: "POST",

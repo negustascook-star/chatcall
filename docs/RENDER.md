@@ -73,16 +73,20 @@ Demonstracinė R16 padanga turi kainuoti 65 EUR už vienetą.
 
 ## 4. Svetainė
 
-`index.html` yra statinė svetainė. Ją galima talpinti atskirai (Render Static
-Site, GitHub Pages ar kitur) ir svetainės lauke **API prisijungimas** įrašyti
-Render API adresą, pavyzdžiui:
+`index.html` yra statinė svetainė. **Rekomenduojamas variantas:** talpinti ją
+tame pačiame Render Web Service kaip ir API. `npm run api` pagrindiniame
+maršrute `/` atiduoda `index.html`, o svetainė automatiškai naudoja tą patį
+domeną kaip API:
 
 ```text
-https://JUSU-SERVISAS.onrender.com
+https://JUSU-SERVISAS.onrender.com/        → svetainė
+https://JUSU-SERVISAS.onrender.com/api/... → API
 ```
 
-API leidžia CORS užklausas iš kitų domenų. Šiuo metu API neturi autentifikacijos,
-todėl viešai atidaryta ji tinka tik demonstracijai.
+Jei svetainę talpini atskirai (Render Static Site, GitHub Pages ar kitur),
+svetainės lauke **API prisijungimas** įrašyk Render API adresą. API leidžia
+CORS užklausas iš kitų domenų. Šiuo metu API neturi autentifikacijos, todėl
+viešai atidaryta ji tinka tik demonstracijai.
 
 ## 5. Failų saugykla
 

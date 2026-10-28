@@ -27,7 +27,8 @@ const tenants = new TenantRepository(dataDir, supabase ? {
   catalogTenantId: supabase.tenantId,
 } : {});
 const agent = new CallAgent({ dataDir, tenants });
-const server = createApiServer({ dataDir, agent, tenants, catalogSource });
+const websiteFile = path.resolve(process.cwd(), "index.html");
+const server = createApiServer({ dataDir, agent, tenants, catalogSource, websiteFile });
 
 server.listen(port, () => {
   console.log(`Chatcall API veikia: http://localhost:${port}`);

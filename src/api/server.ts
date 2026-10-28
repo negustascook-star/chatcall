@@ -1,4 +1,6 @@
+import { readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import path from "node:path";
 import { CallAgent, CallEndedError, CallNotFoundError } from "../agent/callAgent.js";
 import { RequestService } from "../requests/requestService.js";
 import { TenantRepository } from "../tenants/tenantRepository.js";
@@ -8,6 +10,7 @@ export interface ApiDependencies {
   agent: CallAgent;
   tenants?: TenantRepository;
   catalogSource?: "json" | "supabase";
+  websiteFile?: string;
 }
 
 class HttpError extends Error {
@@ -23,10 +26,11 @@ class HttpError extends Error {
 export function createApiServer(deps: ApiDependencies): Server {
   const tenants = deps.tenants ?? new TenantRepository(deps.dataDir);
   const requests = new RequestService(deps.dataDir);
+  const websiteFile = deps.websiteFile ?? path.resolve(process.cwd(), "index.html");
 
   return createServer(async (req, res) => {
     try {
-      await route(req, res, deps.agent, tenants, requests, deps.catalogSource ?? "json");
+      await route(req, res, deps.agent, tenants, requests, deps.catalogSource ?? "json", websiteFile);
     } catch (error) {
       if (res.headersSent) {
         res.end();
@@ -59,12 +63,18 @@ async function route(
   tenants: TenantRepository,
   requests: RequestService,
   catalogSource: "json" | "supabase",
+  websiteFile: string,
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
 
   if (method === "OPTIONS") {
     sendNoContent(res);
+    return;
+  }
+
+  if (method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
+    await sendWebsite(res, websiteFile);
     return;
   }
 
@@ -214,6 +224,26 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
 
     req.on("error", reject);
   });
+}
+
+async function sendWebsite(res: ServerResponse, file: string): Promise<void> {
+  let html: Buffer;
+  try {
+    html = await readFile(file);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new HttpError(404, "Svetainė nerasta.");
+    }
+    throw error;
+  }
+
+  res.writeHead(200, {
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": html.byteLength,
+    "Cache-Control": "no-cache",
+    "X-Content-Type-Options": "nosniff",
+  });
+  res.end(html);
 }
 
 function sendJson(res: ServerResponse, status: number, payload: unknown): void {
