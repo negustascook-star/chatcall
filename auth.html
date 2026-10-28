@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#09090b" />
+  <title>Prisijungti · AIcall</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui;background:#09090b;color:#fff}.glow{background:radial-gradient(ellipse at 16% 12%,rgba(112,84,238,.2),transparent 38%),radial-gradient(ellipse at 86% 80%,rgba(76,29,149,.15),transparent 34%)}.dots{background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1px);background-size:20px 20px}.field{width:100%;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.04);padding:13px 14px;color:white;font:inherit;font-size:13px;outline:0}.field:focus{border-color:#8b7aff}.field::placeholder{color:#686873}button,a{transition:all .2s ease}
+  </style>
+</head>
+<body>
+  <main class="glow relative grid min-h-screen overflow-hidden lg:grid-cols-[1fr_.9fr]">
+    <section class="relative z-10 flex flex-col justify-between px-6 py-7 md:px-12">
+      <a href="./index.html" class="flex w-fit items-center gap-2.5 text-[19px] font-bold tracking-[-.04em]"><span class="grid h-8 w-8 place-items-center rounded-[11px] bg-gradient-to-br from-violet-400 to-indigo-600 text-white">◖</span><span>AIcall<span class="text-violet-400">.</span></span></a>
+      <div class="mx-auto w-full max-w-[440px] py-12">
+        <span id="eyebrow" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.045] px-3 py-1.5 text-[10px] font-semibold tracking-wide text-zinc-300"><i class="h-1.5 w-1.5 rounded-full bg-violet-400"></i> PRADĖK NEMOKAMAI</span>
+        <h1 id="heading" class="mt-6 text-[40px] font-semibold leading-tight tracking-[-.06em]">Sukurk AIcall paskyrą.</h1>
+        <p id="subheading" class="mt-3 text-[13px] leading-6 text-zinc-400">Registruokis ir tęsk į AIcall pagrindinį puslapį.</p>
+        <form id="auth-form" class="mt-8 space-y-4" novalidate>
+          <label id="name-field" class="hidden block text-[10px] font-medium text-zinc-300">Vardas<input id="name" autocomplete="name" placeholder="Tavo vardas" class="field mt-2" /></label>
+          <label class="block text-[10px] font-medium text-zinc-300">El. paštas<input id="email" type="email" autocomplete="email" required placeholder="vardas@imone.lt" class="field mt-2" /></label>
+          <label class="block text-[10px] font-medium text-zinc-300">Slaptažodis<input id="password" type="password" autocomplete="new-password" required minlength="8" placeholder="Mažiausiai 8 simboliai" class="field mt-2" /></label>
+          <label id="confirm-field" class="block text-[10px] font-medium text-zinc-300">Pakartok slaptažodį<input id="confirm" type="password" autocomplete="new-password" placeholder="Pakartok slaptažodį" class="field mt-2" /></label>
+          <div id="error" role="alert" class="hidden rounded-lg border border-rose-400/20 bg-rose-400/10 px-3 py-2.5 text-[10px] text-rose-200"></div>
+          <button id="submit" class="w-full rounded-xl bg-violet-500 py-3.5 text-[12px] font-semibold text-white hover:bg-violet-400">Sukurti paskyrą <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="mt-6 text-center text-[10px] text-zinc-500"><span id="switch-prompt">Jau turi paskyrą?</span> <button id="switch-mode" class="font-semibold text-violet-300 hover:text-white">Prisijunk</button></p>
+        <p class="mt-5 text-center text-[9px] leading-4 text-zinc-600">Puslapio dizainas paruoštas. Prisijungimo autentifikaciją vėliau susiesime su pagrindine programėle.</p>
+      </div>
+      <div class="text-[9px] text-zinc-600">© 2026 AIcall</div>
+    </section>
+    <aside class="relative hidden items-center justify-center border-l border-white/[.07] bg-white/[.015] p-12 lg:flex">
+      <div class="dots absolute inset-0 opacity-20"></div>
+      <div class="relative max-w-md"><div class="grid h-16 w-16 place-items-center rounded-[20px] bg-gradient-to-br from-violet-400 to-indigo-600 text-2xl shadow-2xl shadow-violet-600/30">◖</div><h2 class="mt-8 text-3xl font-semibold tracking-[-.05em]">Kiekvienas pokalbis<br />gali tapti galimybe.</h2><p class="mt-4 text-[13px] leading-6 text-zinc-400">AIcall padeda tavo komandai greičiau atsakyti, suprasti klientų poreikius ir išsaugoti tai, kas svarbu.</p><div class="mt-8 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.035] p-4"><span class="grid h-9 w-9 place-items-center rounded-xl bg-emerald-400/10 text-emerald-300">✓</span><div><div class="text-[11px] font-semibold">ChatCall agentas</div><div class="mt-1 text-[9px] text-zinc-500">Registracija ir prisijungimas prie AIcall</div></div></div></div>
+    </aside>
+  </main>
+  <script>
+    const query=new URLSearchParams(location.search);let mode=query.get('mode')==='login'?'login':'signup';
+    const form=document.querySelector('#auth-form'),notice=document.querySelector('#error'),nameField=document.querySelector('#name-field'),confirmField=document.querySelector('#confirm-field'),heading=document.querySelector('#heading'),subheading=document.querySelector('#subheading'),eyebrow=document.querySelector('#eyebrow'),submit=document.querySelector('#submit'),switchPrompt=document.querySelector('#switch-prompt'),switchMode=document.querySelector('#switch-mode'),password=document.querySelector('#password');
+    function setMode(value){mode=value;const signup=mode==='signup';nameField.classList.toggle('hidden',!signup);confirmField.classList.toggle('hidden',!signup);heading.textContent=signup?'Sukurk AIcall paskyrą.':'Prisijunk prie AIcall.';subheading.textContent=signup?'Registracijos puslapis paruoštas prijungti prie pagrindinės programėlės.':'Prisijungimo puslapis paruoštas prijungti prie pagrindinės programėlės.';eyebrow.lastChild.textContent=signup?' PRADĖK NEMOKAMAI':' SVEIKI SUGRĮŽĘ';submit.innerHTML=signup?'Sukurti paskyrą <span aria-hidden="true">→</span>':'Prisijungti <span aria-hidden="true">→</span>';switchPrompt.textContent=signup?'Jau turi paskyrą?':'Dar neturi paskyros?';switchMode.textContent=signup?'Prisijunk':'Užsiregistruok';password.autocomplete=signup?'new-password':'current-password';password.placeholder=signup?'Mažiausiai 8 simboliai':'Tavo slaptažodis'}
+    switchMode.addEventListener('click',()=>{setMode(mode==='signup'?'login':'signup');notice.classList.add('hidden')});
+    form.addEventListener('submit',event=>{event.preventDefault();notice.textContent='Forma paruošta. Prisijungimą ir paskyros sukūrimą prijungsime prie pagrindinės programėlės.';notice.className='rounded-lg border border-violet-400/20 bg-violet-400/10 px-3 py-2.5 text-[10px] text-violet-100'});
+    setMode(mode);
+  </script>
+</body>
+</html>
