@@ -1,9 +1,7 @@
-import type { IncomingMessage } from "node:http";
-import { isIP } from "node:net";
-
-export type SiteLanguage = "en" | "lt";
-
-const lithuanian: Record<string, string> = {
+// Automatically show Lithuanian to visitors whose public IP geolocates to Lithuania.
+// Country-only lookup: https://api.country.is/ (the provider receives the visitor's IP).
+(() => {
+  const translations = {
   "AIcall — AI receptionist for businesses": "AIcall — DI registratorius verslui",
   "How it works": "Kaip veikia",
   "Features": "Funkcijos",
@@ -192,57 +190,77 @@ const lithuanian: Record<string, string> = {
   "No records yet in": "Įrašų dar nėra skiltyje",
   "Customer": "Klientas",
 };
-
-const languageCache = new Map<string, { language: SiteLanguage; expiresAt: number }>();
-const cacheTtlMs = 24 * 60 * 60 * 1000;
-
-function firstHeader(req: IncomingMessage, name: string): string | undefined {
-  const value = req.headers[name];
-  return Array.isArray(value) ? value[0] : value;
-}
-
-export async function resolveSiteLanguage(req: IncomingMessage): Promise<SiteLanguage> {
-  const forced = new URL(req.url ?? "/", "http://localhost").searchParams.get("lang")?.toLowerCase();
-  if (forced === "lt" || forced === "en") return forced;
-
-  const cfCountry = firstHeader(req, "cf-ipcountry")?.toUpperCase();
-  if (cfCountry && /^[A-Z]{2}$/.test(cfCountry)) return cfCountry === "LT" ? "lt" : "en";
-  const edgeCountry = firstHeader(req, "x-vercel-ip-country")?.toUpperCase();
-  if (edgeCountry && /^[A-Z]{2}$/.test(edgeCountry)) return edgeCountry === "LT" ? "lt" : "en";
-
-  const forwarded = firstHeader(req, "x-forwarded-for")?.split(",")[0]?.trim();
-  const ip = firstHeader(req, "x-real-ip")?.trim() || forwarded;
-  if (ip && isIP(ip)) {
-    const cached = languageCache.get(ip);
-    if (cached && cached.expiresAt > Date.now()) return cached.language;
-    try {
-      const response = await fetch(`https://api.country.is/${encodeURIComponent(ip)}`, {
-        signal: AbortSignal.timeout(1200),
-        headers: { Accept: "application/json" },
-      });
-      if (response.ok) {
-        const body = (await response.json()) as { country?: unknown };
-        const country = typeof body.country === "string" ? body.country.toUpperCase() : "";
-        if (/^[A-Z]{2}$/.test(country)) {
-          const language = country === "LT" ? "lt" : "en";
-          languageCache.set(ip, { language, expiresAt: Date.now() + cacheTtlMs });
-          return language;
-        }
+  const params = new URLSearchParams(location.search);
+  const applyLithuanian = () => {
+    document.documentElement.lang = 'lt';
+    const translateText = node => {
+      const original = node.nodeValue || '';
+      const trimmed = original.trim();
+      if (!trimmed) return;
+      let translated = translations[trimmed];
+      const businessCount = trimmed.match(/^(\d+) businesses?$/);
+      if (!translated && businessCount) {
+        const count = Number(businessCount[1]);
+        translated = count === 1 ? '1 verslas' : count % 10 >= 2 && count % 10 <= 9 && (count % 100 < 11 || count % 100 > 19) ? count + ' verslai' : count + ' verslų';
       }
-    } catch {
-      // Fall back to the browser's language preference when geo lookup is unavailable.
+      if (!translated && trimmed.startsWith('Add: ')) translated = 'Pridėti: ' + (translations[trimmed.slice(5)] || trimmed.slice(5));
+      if (!translated && trimmed.startsWith('Selected plan: ')) translated = 'Pasirinktas planas: ' + trimmed.slice(15);
+      if (!translated && trimmed.startsWith('Could not open the account: ')) translated = 'Nepavyko atidaryti paskyros: ' + trimmed.slice(28);
+      if (!translated && trimmed.startsWith('No records yet in „') && trimmed.endsWith('“.')) {
+        const section = trimmed.slice(19, -2);
+        translated = 'Įrašų dar nėra skiltyje „' + (translations[section] || section) + '“.';
+      }
+      if (translated) node.nodeValue = original.replace(trimmed, translated);
+    };
+    const translateElement = element => {
+      if (!(element instanceof Element) || element.closest('script,style')) return;
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) { return node.parentElement && node.parentElement.closest('script,style') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; }
+      });
+      let node;
+      while (node = walker.nextNode()) translateText(node);
+      for (const attr of ['placeholder', 'aria-label', 'title']) {
+        const value = element.getAttribute(attr);
+        if (value && translations[value]) element.setAttribute(attr, translations[value]);
+      }
+      element.querySelectorAll('[placeholder],[aria-label],[title]').forEach(child => {
+        for (const attr of ['placeholder', 'aria-label', 'title']) {
+          const value = child.getAttribute(attr);
+          if (value && translations[value]) child.setAttribute(attr, translations[value]);
+        }
+      });
+    };
+    translateElement(document.body);
+    new MutationObserver(records => {
+      for (const record of records) {
+        if (record.type === 'characterData') { translateText(record.target); continue; }
+        record.addedNodes.forEach(node => {
+          if (node.nodeType === Node.ELEMENT_NODE) translateElement(node);
+          else if (node.nodeType === Node.TEXT_NODE) translateText(node);
+        });
+      }
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  };
+
+  const forced = params.get('lang')?.toLowerCase();
+  if (forced === 'lt') { applyLithuanian(); return; }
+  if (forced === 'en') { document.documentElement.lang = 'en'; return; }
+
+  const cacheKey = 'aicall.geo-country';
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (cached?.expiresAt > Date.now() && /^[A-Z]{2}$/.test(cached.country)) {
+      if (cached.country === 'LT') applyLithuanian();
+      return;
     }
-  }
+  } catch {}
 
-  const acceptLanguage = firstHeader(req, "accept-language")?.toLowerCase() ?? "";
-  return /(^|[,;\s])lt(-|[,;\s]|$)/.test(acceptLanguage) ? "lt" : "en";
-}
-
-export function localizeHtml(html: Buffer, language: SiteLanguage): Buffer {
-  if (language === "en") return html;
-  const dictionary = JSON.stringify(lithuanian).replace(/</g, "\\u003c");
-  const translator = `<script>(function(){const dictionary=${dictionary};const translateText=node=>{const original=node.nodeValue||'';const trimmed=original.trim();if(!trimmed)return;let translated=dictionary[trimmed];const businessCount=trimmed.match(/^(\d+) businesses?$/);if(!translated&&businessCount){const count=Number(businessCount[1]);translated=count===1?'1 verslas':count%10>=2&&count%10<=9&&(count%100<11||count%100>19)?count+' verslai':count+' verslų'}if(!translated&&trimmed.startsWith('Add: ')){translated='Pridėti: '+(dictionary[trimmed.slice(5)]||trimmed.slice(5))}if(!translated&&trimmed.startsWith('Selected plan: ')){translated='Pasirinktas planas: '+trimmed.slice(15)}if(!translated&&trimmed.startsWith('Could not open the account: ')){translated='Nepavyko atidaryti paskyros: '+trimmed.slice(28)}if(!translated&&trimmed.startsWith('No records yet in „')&&trimmed.endsWith('“.')){const section=trimmed.slice(19,-2);translated='Įrašų dar nėra skiltyje „'+(dictionary[section]||section)+'“.'}if(translated)node.nodeValue=original.replace(trimmed,translated)};const translateElement=element=>{if(!(element instanceof Element)||element.closest('script,style'))return;const walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT,{acceptNode(node){return node.parentElement&&node.parentElement.closest('script,style')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}});let node;while(node=walker.nextNode())translateText(node);for(const attr of ['placeholder','aria-label','title']){const value=element.getAttribute(attr);if(value&&dictionary[value])element.setAttribute(attr,dictionary[value])}element.querySelectorAll('[placeholder],[aria-label],[title]').forEach(child=>{for(const attr of ['placeholder','aria-label','title']){const value=child.getAttribute(attr);if(value&&dictionary[value])child.setAttribute(attr,dictionary[value])}})};document.documentElement.lang='lt';translateElement(document.body);new MutationObserver(records=>{for(const record of records){if(record.type==='characterData'){translateText(record.target);continue}record.addedNodes.forEach(node=>{if(node.nodeType===Node.ELEMENT_NODE)translateElement(node);else if(node.nodeType===Node.TEXT_NODE)translateText(node)})}}).observe(document.body,{childList:true,subtree:true,characterData:true})})();</script>`;
-  let localized = html.toString("utf8").replace(/<html lang="en">/g, '<html lang="lt">');
-  localized = localized.replace("</body>", `${translator}</body>`);
-  return Buffer.from(localized, "utf8");
-}
+  fetch('https://api.country.is/', { headers: { Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(1600) })
+    .then(response => response.ok ? response.json() : Promise.reject(new Error('Geo lookup failed')))
+    .then(result => {
+      if (!/^[A-Z]{2}$/.test(result.country || '')) throw new Error('No country found');
+      try { localStorage.setItem(cacheKey, JSON.stringify({ country: result.country, expiresAt: Date.now() + 86400000 })); } catch {}
+      if (result.country === 'LT') applyLithuanian();
+    })
+    .catch(() => { if ((navigator.language || '').toLowerCase().startsWith('lt')) applyLithuanian(); });
+})();

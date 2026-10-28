@@ -4,7 +4,6 @@ import path from "node:path";
 import { CallAgent, CallEndedError, CallNotFoundError } from "../agent/callAgent.js";
 import { RequestService } from "../requests/requestService.js";
 import { TenantRepository } from "../tenants/tenantRepository.js";
-import { localizeHtml, resolveSiteLanguage } from "./localization.js";
 
 export interface ApiDependencies {
   dataDir: string;
@@ -87,22 +86,27 @@ async function route(
   }
 
   if (method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
-    await sendWebsite(req, res, websiteFile);
+    await sendWebsite(res, websiteFile);
     return;
   }
 
   if (method === "GET" && url.pathname === "/auth.html") {
-    await sendWebsite(req, res, authFile);
+    await sendWebsite(res, authFile);
     return;
   }
 
   if (method === "GET" && url.pathname === "/app.html") {
-    await sendWebsite(req, res, appFile);
+    await sendWebsite(res, appFile);
     return;
   }
 
   if (method === "GET" && url.pathname === "/api/public-config") {
     sendJson(res, 200, { supabaseUrl: supabaseUrl ?? null, supabasePublicKey: supabasePublicKey ?? null, warehousePlanPriceEur: warehousePlanPriceEur ?? null });
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/i18n.js") {
+    await sendJavaScript(res, path.join(path.dirname(websiteFile), "i18n.js"));
     return;
   }
 
@@ -254,7 +258,7 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   });
 }
 
-async function sendWebsite(req: IncomingMessage, res: ServerResponse, file: string): Promise<void> {
+async function sendWebsite(res: ServerResponse, file: string): Promise<void> {
   let html: Buffer;
   try {
     html = await readFile(file);
@@ -265,14 +269,32 @@ async function sendWebsite(req: IncomingMessage, res: ServerResponse, file: stri
     throw error;
   }
 
-  const localizedHtml = localizeHtml(html, await resolveSiteLanguage(req));
   res.writeHead(200, {
     "Content-Type": "text/html; charset=utf-8",
-    "Content-Length": localizedHtml.byteLength,
-    "Cache-Control": "private, no-store",
+    "Content-Length": html.byteLength,
+    "Cache-Control": "no-cache",
     "X-Content-Type-Options": "nosniff",
   });
-  res.end(localizedHtml);
+  res.end(html);
+}
+
+async function sendJavaScript(res: ServerResponse, file: string): Promise<void> {
+  let script: Buffer;
+  try {
+    script = await readFile(file);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new HttpError(404, "Svetainės scenarijus nerastas.");
+    }
+    throw error;
+  }
+  res.writeHead(200, {
+    "Content-Type": "text/javascript; charset=utf-8",
+    "Content-Length": script.byteLength,
+    "Cache-Control": "no-cache",
+    "X-Content-Type-Options": "nosniff",
+  });
+  res.end(script);
 }
 
 function sendJson(res: ServerResponse, status: number, payload: unknown): void {
