@@ -203,6 +203,7 @@
         const count = Number(businessCount[1]);
         translated = count === 1 ? '1 verslas' : count % 10 >= 2 && count % 10 <= 9 && (count % 100 < 11 || count % 100 > 19) ? count + ' verslai' : count + ' verslų';
       }
+      if (!translated && trimmed.endsWith(' · sample data')) { const label = trimmed.slice(0, -14); translated = (translations[label] || label) + ' · pavyzdiniai duomenys'; }
       if (!translated && trimmed.startsWith('Add: ')) translated = 'Pridėti: ' + (translations[trimmed.slice(5)] || trimmed.slice(5));
       if (!translated && trimmed.startsWith('Selected plan: ')) translated = 'Pasirinktas planas: ' + trimmed.slice(15);
       if (!translated && trimmed.startsWith('Could not open the account: ')) translated = 'Nepavyko atidaryti paskyros: ' + trimmed.slice(28);
