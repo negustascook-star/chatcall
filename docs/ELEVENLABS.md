@@ -160,3 +160,65 @@ atskiri, kol nepadaryta sinchronizacija.
 - [ ] Nustatyti Render kintamieji.
 - [ ] Atlikta Supabase migracija.
 - [ ] Bandomasis skambutis praėjo.
+
+## 8. Kur ką rasti (tikslios nuorodos)
+
+### ElevenLabs
+
+| Ką | Kur |
+| --- | --- |
+| Prisijungti | https://elevenlabs.io/app |
+| API raktas | https://elevenlabs.io/app/settings/api-keys |
+| Planas ir kreditai | https://elevenlabs.io/app/settings/subscription |
+| Agentai | https://elevenlabs.io/app/agents |
+| Agentų telefonai | https://elevenlabs.io/app/agents/phone-numbers |
+| Skambučių istorija | https://elevenlabs.io/app/agents/history |
+| Webhook'ai (post-call) | https://elevenlabs.io/app/agents/settings |
+| Reception.ai | https://app.reception.ai |
+
+API raktas kuriamas taip:
+
+1. Atidarykite https://elevenlabs.io/app/settings/api-keys.
+2. Spauskite **Create API key**.
+3. Pavadinimas: `aicall`.
+4. Palikite **Full access** (arba įjunkite Agents, Phone numbers, Webhooks,
+   Tools read/write).
+5. Spauskite **Create** ir **nusikopijuokite raktą iš karto** – jis rodomas tik
+   vieną kartą.
+6. Įrašykite į `chatcall/.env`:
+   `ELEVENLABS_API_KEY=sk_...`
+
+### Twilio (jei reikia +370 numerio)
+
+| Ką | Kur |
+| --- | --- |
+| Registracija | https://www.twilio.com/try-twilio |
+| Valdymo konsolė | https://console.twilio.com |
+| Pirkti numerį | Console → **Phone Numbers → Manage → Buy a number** → Country: Lithuania → Voice |
+| Reguliaciniai dokumentai | Console → **Trust Hub → Regulatory Compliance → Bundles** |
+| Account SID / Auth Token | Console → pagrindinis puslapis → **Account Info** |
+| API raktai | https://console.twilio.com/us1/account/keys-credentials/api-keys |
+
+Twilio numerį į ElevenLabs įkeliate: **Phone Numbers → Import from Twilio**,
+įrašote numerį, Account SID ir Auth Token, tada priskiriate agentą.
+
+### Mūsų platforma
+
+| Ką | Kur |
+| --- | --- |
+| Owner darbo vieta | https://aicall.lt/app.html |
+| Administratorius | https://aicall.lt/admin.html |
+| Render kintamieji | https://dashboard.render.com → `chatcall-api` → **Environment** |
+| Supabase SQL | https://supabase.com/dashboard/project/lzongluhbmyasadscuri/sql/new |
+
+## 9. Numerio variantai pagal greitumą
+
+1. **Jau turite ElevenLabs numerį** – nieko daryti nereikia, tik atsiųskite jo
+   numerį ir numerio ID iš https://elevenlabs.io/app/agents/phone-numbers.
+2. **Turite +370 verslo numerį** – greičiausias variantas: nukreipkite
+   neatsakytus skambučius į ElevenLabs numerį savo operatoriaus nustatymuose
+   (arba `**61*<numeris>#`). Skambinantys klientai skambina vietiniu tarifu.
+3. **Norite savo +370 numerio ElevenLabs viduje** – pirkite Twilio numerį
+   (reikės reguliacinio bundle su įmonės dokumentais) ir įkelkite į ElevenLabs.
+4. **SIP trunk** – jei turite vietinį telekomunikacijų tiekėją ar PBX.
+
