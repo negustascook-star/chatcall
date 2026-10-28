@@ -130,7 +130,7 @@ async function main(): Promise<void> {
     api<Subscription>("/v1/user/subscription"),
     api<AgentList>("/v1/convai/agents?page_size=100"),
     api<PhoneNumber[]>("/v1/convai/phone-numbers"),
-    api<WebhookList>("/v1/workspace/webhooks?include_usages=true"),
+    api<WebhookList>("/v1/workspace/webhooks?include_usages=false"),
     api<ToolList>("/v1/convai/tools"),
   ]);
 
