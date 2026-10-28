@@ -163,7 +163,7 @@ data/tenants/<tenant-id>/
 - Admin UI, autentifikacijos, mokėjimų, SMS.
 - Produkcinės DB / eilių / retry logikos.
 
-Svetainė ir frontendas — ne šio repo scope. Šis repo atsako už logiką ir duomenis, kuriuos frontendas/telefonija gali kviesti per API.
+Šiame repo yra ir statinė Aical demonstracinė svetainė (`index.html`). Jos „Live API demo“ jungiasi prie žemiau aprašytos ChatCall API ir leidžia išbandyti realų `CallAgent` / `RuleBasedBrain` pokalbį. Likę svetainės blokai yra produkto dizaino peržiūra; administravimo, autentifikacijos ir mokėjimų funkcijų jie neteikia.
 
 ## Struktūra
 
@@ -205,3 +205,10 @@ Dengiama:
 ## Toliau
 
 Architektūra, būsenų mašina ir Twilio/OpenAI prijungimo planas: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+
+## Svetainė ir gyvas API demo
+
+Repo šaknyje esantis `index.html` pateikia Aical produkto svetainę ir bandomąjį pokalbį su ChatCall verslo logika. Frontendas naudoja `GET /api/tenants`, `POST /api/calls`, `POST /api/calls/:id/messages` ir `POST /api/calls/:id/end` maršrutus. API adresą galima pakeisti svetainės „API prisijungimas“ laukelyje.
+
+Paleisk API įprastai (`npm install`, tada `npm run api`) ir atidaryk `index.html` naršyklėje. Jei puslapis publikuojamas atskirai, nurodyk viešai pasiekiamą API adresą; GitHub Pages pats backend’o nepaleidžia. API šiuo metu yra demo režimo, be autentifikacijos, todėl jos nereikėtų atverti viešam naudojimui neįdiegus saugumo priemonių.
