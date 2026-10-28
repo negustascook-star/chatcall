@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="lt">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#09090b" />
-  <title>Prisijungti · AIcall</title>
+  <title>Log in · AIcall</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,27 +16,27 @@
 <body>
   <main class="glow relative grid min-h-screen overflow-hidden lg:grid-cols-[1fr_.9fr]">
     <section class="relative z-10 flex flex-col justify-between px-6 py-7 md:px-12">
-      <a href="./index.html" class="w-fit text-[19px] font-bold tracking-[-.04em]">AIcall<span class="text-violet-400">.</span></a>
+      <a href="./index.html" class="flex w-fit items-center gap-2.5 text-[19px] font-bold tracking-[-.04em]"><span class="grid h-10 w-10 place-items-center rounded-[14px] bg-gradient-to-br from-violet-400 to-indigo-600 text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 10v4m3-7v10m3-13v16m3-10v4m3-16v20m3-13v10m3-7v4"/></svg></span><span>AIcall<span class="text-violet-400">.</span></span></a>
       <div class="mx-auto w-full max-w-[440px] py-12">
-        <span id="eyebrow" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.045] px-3 py-1.5 text-[10px] font-semibold tracking-wide text-zinc-300"><i class="h-1.5 w-1.5 rounded-full bg-violet-400"></i> AUTOSERVISO PASKYRA</span>
-        <h1 id="heading" class="mt-6 text-[40px] font-semibold leading-tight tracking-[-.06em]">Sukurk AIcall paskyrą.</h1>
-        <p id="subheading" class="mt-3 text-[13px] leading-6 text-zinc-400">Prisijunkite arba susikurkite paskyrą ir nustatykite savo autoserviso informaciją.</p>
+        <span id="eyebrow" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.045] px-3 py-1.5 text-[10px] font-semibold tracking-wide text-zinc-300"><i class="h-1.5 w-1.5 rounded-full bg-violet-400"></i> CREATE YOUR ACCOUNT</span>
+        <h1 id="heading" class="mt-6 text-[40px] font-semibold leading-tight tracking-[-.06em]">Create your AIcall account.</h1>
+        <p id="subheading" class="mt-3 text-[13px] leading-6 text-zinc-400">Sign up or log in to set up your auto repair business.</p>
         <form id="auth-form" class="mt-8 space-y-4" novalidate>
-          <label id="name-field" class="hidden block text-[10px] font-medium text-zinc-300">Vardas<input id="name" autocomplete="name" placeholder="Tavo vardas" class="field mt-2" /></label>
-          <label class="block text-[10px] font-medium text-zinc-300">El. paštas<input id="email" type="email" autocomplete="email" required placeholder="vardas@imone.lt" class="field mt-2" /></label>
-          <label class="block text-[10px] font-medium text-zinc-300">Slaptažodis<input id="password" type="password" autocomplete="new-password" required minlength="8" placeholder="Mažiausiai 8 simboliai" class="field mt-2" /></label>
-          <label id="confirm-field" class="block text-[10px] font-medium text-zinc-300">Pakartok slaptažodį<input id="confirm" type="password" autocomplete="new-password" placeholder="Pakartok slaptažodį" class="field mt-2" /></label>
+          <label id="name-field" class="hidden block text-[10px] font-medium text-zinc-300">Name<input id="name" autocomplete="name" placeholder="Your name" class="field mt-2" /></label>
+          <label class="block text-[10px] font-medium text-zinc-300">Email address<input id="email" type="email" autocomplete="email" required placeholder="name@business.com" class="field mt-2" /></label>
+          <label class="block text-[10px] font-medium text-zinc-300">Password<input id="password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters" class="field mt-2" /></label>
+          <label id="confirm-field" class="block text-[10px] font-medium text-zinc-300">Confirm password<input id="confirm" type="password" autocomplete="new-password" placeholder="Confirm password" class="field mt-2" /></label>
           <div id="error" role="alert" class="hidden rounded-lg border border-rose-400/20 bg-rose-400/10 px-3 py-2.5 text-[10px] text-rose-200"></div>
-          <button id="submit" class="w-full rounded-xl bg-violet-500 py-3.5 text-[12px] font-semibold text-white hover:bg-violet-400">Sukurti paskyrą <span aria-hidden="true">→</span></button>
+          <button id="submit" class="w-full rounded-xl bg-violet-500 py-3.5 text-[12px] font-semibold text-white hover:bg-violet-400">Create account <span aria-hidden="true">→</span></button>
         </form>
-        <p class="mt-6 text-center text-[10px] text-zinc-500"><span id="switch-prompt">Jau turi paskyrą?</span> <button id="switch-mode" class="font-semibold text-violet-300 hover:text-white">Prisijunk</button></p>
-        <p class="mt-5 text-center text-[9px] leading-4 text-zinc-600">Prisijungimas apsaugomas jūsų Supabase Auth paskyra. Mokamas planas aktyvuojamas tik po mokėjimo patvirtinimo.</p>
+        <p class="mt-6 text-center text-[10px] text-zinc-500"><span id="switch-prompt">Already have an account?</span> <button id="switch-mode" class="font-semibold text-violet-300 hover:text-white">Log in</button></p>
+        <p class="mt-5 text-center text-[9px] leading-4 text-zinc-600">Your account is secured with Supabase Auth. Paid features activate only after payment is confirmed.</p>
       </div>
       <div class="text-[9px] text-zinc-600">© <span id="year"></span> AIcall</div>
     </section>
     <aside class="relative hidden items-center justify-center border-l border-white/[.07] bg-white/[.015] p-12 lg:flex">
       <div class="dots absolute inset-0 opacity-20"></div>
-      <div class="relative max-w-md"><h2 class="mt-0 text-3xl font-semibold tracking-[-.05em]">Kiekvienas pokalbis<br />gali tapti galimybe.</h2><p class="mt-4 text-[13px] leading-6 text-zinc-400">AIcall padeda tavo komandai greičiau atsakyti, suprasti klientų poreikius ir išsaugoti tai, kas svarbu.</p><div class="mt-8 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.035] p-4"><span class="grid h-9 w-9 place-items-center rounded-xl bg-emerald-400/10 text-emerald-300">✓</span><div><div class="text-[11px] font-semibold">AIcall DI registratorius</div><div class="mt-1 text-[9px] text-zinc-500">Autoservisų skambučių ir vizitų valdymas</div></div></div></div>
+      <div class="relative max-w-md"><div class="grid h-16 w-16 place-items-center rounded-[20px] bg-gradient-to-br from-violet-400 to-indigo-600 text-white shadow-2xl shadow-violet-600/30"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 10v4m3-7v10m3-13v16m3-10v4m3-16v20m3-13v10m3-7v4"/></svg></div><h2 class="mt-0 text-3xl font-semibold tracking-[-.05em]">Every conversation<br />can become an opportunity.</h2><p class="mt-4 text-[13px] leading-6 text-zinc-400">AIcall helps your team answer faster, understand customer needs, and keep the important details in one place.</p><div class="mt-8 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.035] p-4"><span class="grid h-9 w-9 place-items-center rounded-xl bg-emerald-400/10 text-emerald-300">✓</span><div><div class="text-[11px] font-semibold">AIcall AI receptionist</div><div class="mt-1 text-[9px] text-zinc-500">Auto shop call and appointment management</div></div></div></div>
     </aside>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -46,9 +46,9 @@
     const form=document.querySelector('#auth-form'),notice=document.querySelector('#error'),nameField=document.querySelector('#name-field'),confirmField=document.querySelector('#confirm-field'),heading=document.querySelector('#heading'),subheading=document.querySelector('#subheading'),eyebrow=document.querySelector('#eyebrow'),submit=document.querySelector('#submit'),switchPrompt=document.querySelector('#switch-prompt'),switchMode=document.querySelector('#switch-mode'),password=document.querySelector('#password');
     let client;
     async function setup(){const r=await fetch('/api/public-config');const c=await r.json();if(c.supabaseUrl&&c.supabasePublicKey)client=window.supabase.createClient(c.supabaseUrl,c.supabasePublicKey);}
-    function setMode(value){mode=value;const signup=mode==='signup';nameField.classList.toggle('hidden',!signup);confirmField.classList.toggle('hidden',!signup);heading.textContent=signup?'Sukurk AIcall paskyrą.':'Prisijunk prie AIcall.';subheading.textContent=signup?'Sukurkite paskyrą ir pradėkite autoserviso nustatymą.':'Prisijunkite prie savo įmonės darbo aplinkos.';eyebrow.lastChild.textContent=signup?' AUTOSERVISO PASKYRA':' SVEIKI SUGRĮŽĘ';submit.innerHTML=signup?'Sukurti paskyrą <span aria-hidden="true">→</span>':'Prisijungti <span aria-hidden="true">→</span>';switchPrompt.textContent=signup?'Jau turite paskyrą?':'Dar neturite paskyros?';switchMode.textContent=signup?'Prisijungti':'Užsiregistruoti';password.autocomplete=signup?'new-password':'current-password';password.placeholder=signup?'Mažiausiai 8 simboliai':'Jūsų slaptažodis'}
+    function setMode(value){mode=value;const signup=mode==='signup';nameField.classList.toggle('hidden',!signup);confirmField.classList.toggle('hidden',!signup);heading.textContent=signup?'Create your AIcall account.':'Log in to AIcall.';subheading.textContent=signup?'Create an account and set up your auto shop.':'Log in to your business workspace.';eyebrow.lastChild.textContent=signup?' CREATE YOUR ACCOUNT':' WELCOME BACK';submit.innerHTML=signup?'Create account <span aria-hidden="true">→</span>':'Log in <span aria-hidden="true">→</span>';switchPrompt.textContent=signup?'Already have an account?':'New to AIcall?';switchMode.textContent=signup?'Log in':'Sign up';password.autocomplete=signup?'new-password':'current-password';password.placeholder=signup?'At least 8 characters':'Your password'}
     switchMode.addEventListener('click',()=>{setMode(mode==='signup'?'login':'signup');notice.classList.add('hidden')});
-    form.addEventListener('submit',async event=>{event.preventDefault();submit.disabled=true;submit.textContent='Palaukite…';notice.classList.add('hidden');try{if(!client)throw new Error('Prisijungimas dar nesukonfigūruotas. Administratorius turi nustatyti Supabase URL ir publishable key.');const email=document.querySelector('#email').value.trim(),pass=password.value;if(mode==='signup'&&pass!==document.querySelector('#confirm').value)throw new Error('Slaptažodžiai nesutampa.');const result=mode==='signup'?await client.auth.signUp({email,password:pass,options:{data:{full_name:document.querySelector('#name').value.trim()}}}):await client.auth.signInWithPassword({email,password:pass});if(result.error)throw result.error;if(mode==='signup'&&!result.data.session){notice.textContent='Patikrinkite el. paštą ir patvirtinkite paskyrą, tada prisijunkite.';notice.className='rounded-lg border border-violet-400/20 bg-violet-400/10 px-3 py-2.5 text-[10px] text-violet-100';return;}location.href='/app.html'+(query.get('plan')?'?plan='+encodeURIComponent(query.get('plan')):'');}catch(e){notice.textContent=e.message||'Nepavyko prisijungti.';notice.className='rounded-lg border border-rose-400/20 bg-rose-400/10 px-3 py-2.5 text-[10px] text-rose-200';}finally{submit.disabled=false;setMode(mode)}});
+    form.addEventListener('submit',async event=>{event.preventDefault();submit.disabled=true;submit.textContent='Please wait…';notice.classList.add('hidden');try{if(!client)throw new Error('Authentication is not configured yet. The administrator must set the Supabase URL and publishable key.');const email=document.querySelector('#email').value.trim(),pass=password.value;if(mode==='signup'&&pass!==document.querySelector('#confirm').value)throw new Error('Passwords do not match.');const result=mode==='signup'?await client.auth.signUp({email,password:pass,options:{data:{full_name:document.querySelector('#name').value.trim()}}}):await client.auth.signInWithPassword({email,password:pass});if(result.error)throw result.error;if(mode==='signup'&&!result.data.session){notice.textContent='Check your email to confirm your account, then log in.';notice.className='rounded-lg border border-violet-400/20 bg-violet-400/10 px-3 py-2.5 text-[10px] text-violet-100';return;}location.href='/app.html'+(query.get('plan')?'?plan='+encodeURIComponent(query.get('plan')):'');}catch(e){notice.textContent=e.message||'Could not log in.';notice.className='rounded-lg border border-rose-400/20 bg-rose-400/10 px-3 py-2.5 text-[10px] text-rose-200';}finally{submit.disabled=false;setMode(mode)}});
     setup().catch(()=>{});setMode(mode);
   </script>
 </body>
