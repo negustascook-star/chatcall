@@ -250,4 +250,8 @@ Paleisk API (`npm ci`, tada `npm run api`) ir atidaryk `http://localhost:3000/`.
 
 Savininkų prisijungimas ir verslo duomenys naudoja Supabase Auth bei RLS. Prieš diegiant reikia pritaikyti migraciją `supabase/migrations/20261028170000_business_owner_app.sql` ir nustatyti `SUPABASE_URL` bei `SUPABASE_PUBLISHABLE_KEY` (naršyklei skirtas raktas; `SUPABASE_SECRET_KEY` lieka tik serveryje). `WAREHOUSE_PLAN_PRICE_EUR` yra pasirenkama platformos administratoriaus konfigūracija; jos nenustačius svetainė rodo „Susisiekite dėl kainos“.
 
+`app.html` kalendorius turi mėnesio ir savaitės vaizdą. Vizitus galima kurti, redaguoti, žymėti kaip įvykusius / atšauktus ir ištrinti; paslaugos bei specialistai pasirenkami iš tų pačių Supabase lentelių, kurias naudoja DI registratorius.
+
+Platformos administratoriui skirta `/admin.html` panelė. Ją apsaugo serverio aplinkos kintamasis `ADMIN_KEY`; panelė rodo įmones, savininkų el. paštus, vizitus, skambučius ir leidžia aktyvuoti `pending`, `receptionist` arba `warehouse` planą. Supabase secret key naudojamas tik serverio pusėje. Administratoriaus API maršrutai yra `/api/admin/overview`, `/api/admin/companies`, `/api/admin/companies/:id/plan`, `/api/admin/appointments` ir `/api/admin/calls`.
+
 Mokėjimų tiekėjas, telefonija ir tiekėjų katalogai šiame diegime dar neprijungti. Todėl pasirinktas planas paskyroje lieka neaktyvus, skambučių / rezervacijų skiltyse rodomos tik realios DB eilutės, o tiekėjo informacija nepateikiama kaip gyva.

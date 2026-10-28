@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#09090b" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>AIcall administratorius</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: Inter, ui-sans-serif, system-ui; }
+    .field { width: 100%; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: rgba(255,255,255,.05); padding: 12px 13px; color: #fff; font: inherit; font-size: 13px; outline: none; }
+    .field:focus { border-color: #8b7aff; }
+    .field option { color: #18181b; }
+    .table-shell { overflow-x: auto; border: 1px solid #27272a; border-radius: 18px; background: #111113; }
+    table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
+    th { padding: 13px 16px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #a1a1aa; background: #18181b; }
+    td { padding: 14px 16px; font-size: 12px; color: #d4d4d8; border-top: 1px solid #27272a; vertical-align: top; }
+    .tab.active { background: #fff; color: #09090b; }
+    button, a, select { transition: all .18s ease; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#09090b] text-white">
+  <div id="loginView" class="grid min-h-screen place-items-center px-4">
+    <form id="loginForm" class="w-full max-w-md rounded-3xl border border-white/10 bg-white/[.04] p-7 shadow-2xl md:p-9">
+      <a href="/" class="inline-flex items-center gap-2 text-sm font-bold tracking-tight">
+        <span class="grid h-9 w-9 place-items-center rounded-xl bg-[#7054ee] text-sm">A</span>
+        AIcall <span class="rounded-full bg-white/10 px-2 py-1 text-[9px] uppercase tracking-widest text-white/60">admin</span>
+      </a>
+      <h1 class="mt-8 text-2xl font-semibold tracking-tight">Administratoriaus panelė</h1>
+      <p class="mt-3 text-xs leading-6 text-white/50">
+        Įveskite serverio aplinkos kintamojo <code class="rounded bg-white/10 px-1.5 py-0.5 text-white/70">ADMIN_KEY</code> reikšmę.
+        Raktas saugomas tik šios sesijos naršyklės atmintyje.
+      </p>
+      <label class="mt-6 block text-xs font-medium text-white/70" for="keyInput">
+        Prieigos raktas
+        <input id="keyInput" name="adminKey" type="password" autocomplete="current-password" class="field mt-2" placeholder="••••••••" required />
+      </label>
+      <div id="loginError" class="mt-4 hidden rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200"></div>
+      <button id="loginButton" class="mt-5 w-full rounded-xl bg-white px-4 py-3 text-xs font-semibold text-zinc-950 hover:bg-zinc-200">Atidaryti panelę</button>
+      <a href="/" class="mt-5 block text-center text-[11px] text-white/40 hover:text-white/70">← Grįžti į svetainę</a>
+    </form>
+  </div>
+
+  <div id="dashView" class="hidden min-h-screen">
+    <header class="border-b border-white/10 bg-[#09090b]/95 px-4 py-3 backdrop-blur md:px-8">
+      <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+        <a href="/" class="flex items-center gap-2 text-sm font-bold tracking-tight">
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-[#7054ee] text-sm">A</span>
+          AIcall <span class="rounded-full bg-white/10 px-2 py-1 text-[9px] uppercase tracking-widest text-white/60">admin</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <button id="refreshButton" class="rounded-xl border border-white/15 px-3 py-2 text-[11px] text-white/70 hover:border-white/30 hover:text-white">Atnaujinti</button>
+          <button id="logoutButton" class="rounded-xl bg-white px-3 py-2 text-[11px] font-semibold text-zinc-950 hover:bg-zinc-200">Atsijungti</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-7 md:px-8">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div class="text-[10px] font-semibold uppercase tracking-[.22em] text-violet-400">Platformos valdymas</div>
+          <h1 class="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">AIcall administratorius</h1>
+          <p class="mt-2 text-xs text-white/40">Įmonės, vizitai, skambučiai ir planų aktyvavimas.</p>
+        </div>
+        <span class="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-semibold text-emerald-300">
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Serverio prieiga aktyvi
+        </span>
+      </div>
+
+      <div id="errorBanner" class="mt-5 hidden rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200"></div>
+      <div id="stats" class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"></div>
+
+      <div class="mt-7 flex flex-wrap items-center justify-between gap-3">
+        <nav id="tabs" class="flex flex-wrap gap-2"></nav>
+        <span id="updatedAt" class="text-[10px] text-white/30"></span>
+      </div>
+
+      <section id="panel" class="mt-4 pb-16"></section>
+    </main>
+  </div>
+
+  <div id="toast" class="pointer-events-none fixed bottom-5 right-5 z-50 hidden rounded-xl border px-4 py-3 text-xs shadow-2xl"></div>
+
+  <script>
+    const STORAGE_KEY = 'aicall.admin.key';
+    const $ = (selector) => document.querySelector(selector);
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+    const PLAN_LABELS = { pending: 'Laukiama', receptionist: 'Registratorius', warehouse: 'Sandėlis' };
+    const STATUS_LABELS = { confirmed: 'Patvirtintas', completed: 'Baigtas', cancelled: 'Atšauktas' };
+    const dateTimeFormat = new Intl.DateTimeFormat('lt-LT', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+    let key = sessionStorage.getItem(STORAGE_KEY) || '';
+    let activeTab = 'overview';
+    let cache = {};
+    let toastTimer;
+
+    const tabs = [
+      ['overview', 'Apžvalga'],
+      ['companies', 'Įmonės'],
+      ['appointments', 'Vizitai'],
+      ['calls', 'Skambučiai'],
+    ];
+
+    function showLogin(message = '') {
+      $('#dashView').classList.add('hidden');
+      $('#loginView').classList.remove('hidden');
+      $('#loginError').textContent = message;
+      $('#loginError').classList.toggle('hidden', !message);
+      $('#keyInput').focus();
+    }
+
+    function showDashboard() {
+      $('#loginView').classList.add('hidden');
+      $('#dashView').classList.remove('hidden');
+      renderTabs();
+    }
+
+    function renderTabs() {
+      $('#tabs').innerHTML = tabs.map(([id, label]) =>
+        `<button data-tab="${id}" class="tab rounded-full border border-white/10 px-4 py-2 text-[11px] font-medium text-white/60 hover:text-white ${id === activeTab ? 'active' : ''}">${esc(label)}</button>`
+      ).join('');
+    }
+
+    function showError(message = '') {
+      $('#errorBanner').textContent = message;
+      $('#errorBanner').classList.toggle('hidden', !message);
+    }
+
+    function toast(message, bad = false) {
+      const element = $('#toast');
+      element.textContent = message;
+      element.className = `pointer-events-none fixed bottom-5 right-5 z-50 rounded-xl border px-4 py-3 text-xs shadow-2xl ${bad ? 'border-rose-500/40 bg-rose-950 text-rose-200' : 'border-emerald-500/30 bg-emerald-950 text-emerald-200'}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => element.classList.add('hidden'), 3500);
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: {
+          ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+          'x-admin-key': key,
+          ...(options.headers || {}),
+        },
+      });
+      let body = {};
+      try { body = await response.json(); } catch {}
+      if (response.status === 401) {
+        key = '';
+        sessionStorage.removeItem(STORAGE_KEY);
+        showLogin(body.error || 'Neteisingas administratoriaus raktas.');
+      }
+      if (!response.ok) throw new Error(body.error || `Užklausa nepavyko (HTTP ${response.status}).`);
+      return body;
+    }
+
+    async function login(candidate) {
+      key = candidate;
+      $('#loginButton').disabled = true;
+      $('#loginButton').textContent = 'Tikrinama…';
+      try {
+        await api('/api/admin/overview', { cache: 'no-store' });
+        sessionStorage.setItem(STORAGE_KEY, key);
+        showDashboard();
+        await load('overview');
+      } catch (error) {
+        key = '';
+        sessionStorage.removeItem(STORAGE_KEY);
+        showLogin(error.message);
+      } finally {
+        $('#loginButton').disabled = false;
+        $('#loginButton').textContent = 'Atidaryti panelę';
+      }
+    }
+
+    async function load(tab = activeTab) {
+      activeTab = tab;
+      renderTabs();
+      showError();
+      $('#panel').innerHTML = '<div class="rounded-2xl border border-white/10 bg-white/[.03] p-8 text-center text-xs text-white/40">Kraunama…</div>';
+      try {
+        if (tab === 'overview') {
+          const [overview, appointments, calls] = await Promise.all([
+            api('/api/admin/overview', { cache: 'no-store' }),
+            api('/api/admin/appointments?limit=6', { cache: 'no-store' }),
+            api('/api/admin/calls?limit=6', { cache: 'no-store' }),
+          ]);
+          cache = { overview, appointments: appointments.appointments, calls: calls.calls };
+          renderStats(overview.stats);
+        } else if (tab === 'companies') {
+          const body = await api('/api/admin/companies', { cache: 'no-store' });
+          cache = { companies: body.companies };
+        } else if (tab === 'appointments') {
+          const body = await api('/api/admin/appointments?limit=250', { cache: 'no-store' });
+          cache = { appointments: body.appointments };
+        } else {
+          const body = await api('/api/admin/calls?limit=250', { cache: 'no-store' });
+          cache = { calls: body.calls };
+        }
+        $('#updatedAt').textContent = 'Atnaujinta ' + new Intl.DateTimeFormat('lt-LT', { hour: '2-digit', minute: '2-digit' }).format(new Date());
+        renderPanel();
+      } catch (error) {
+        $('#panel').innerHTML = '';
+        showError(error.message);
+      }
+    }
+
+    function renderStats(stats) {
+      const cards = [
+        ['Įmonės', stats.companies, `${stats.paidCompanies} su aktyviu planu`],
+        ['Vartotojai', stats.users, 'Supabase Auth'],
+        ['Vizitai', stats.appointments, 'visi kalendoriai'],
+        ['Skambučiai', stats.calls, 'visi įrašai'],
+        ['Paslaugos', stats.services, 'visos įmonės'],
+        ['Specialistai', stats.specialists, 'visi įrašai'],
+      ];
+      $('#stats').innerHTML = cards.map(([label, value, hint]) => `
+        <div class="rounded-2xl border border-white/10 bg-white/[.035] p-4">
+          <div class="text-[10px] uppercase tracking-wider text-white/40">${esc(label)}</div>
+          <div class="mt-2 text-2xl font-semibold">${Number(value) || 0}</div>
+          <div class="mt-1 text-[10px] text-white/30">${esc(hint)}</div>
+        </div>`).join('');
+    }
+
+    function renderPanel() {
+      if (activeTab === 'overview') {
+        const overview = cache.overview;
+        if (!overview) return;
+        $('#panel').innerHTML = `
+          <div class="grid gap-4 xl:grid-cols-2">
+            <div>
+              <div class="mb-3 flex items-center justify-between"><h2 class="text-sm font-semibold">Naujausios įmonės</h2><button data-tab="companies" class="text-[11px] text-violet-300 hover:text-violet-200">Visos įmonės →</button></div>
+              ${companyTable(overview.companies.slice(0, 5), true)}
+            </div>
+            <div>
+              <div class="mb-3 flex items-center justify-between"><h2 class="text-sm font-semibold">Naujausi vizitai</h2><button data-tab="appointments" class="text-[11px] text-violet-300 hover:text-violet-200">Visi vizitai →</button></div>
+              ${appointmentTable(cache.appointments || [], true)}
+            </div>
+            <div class="xl:col-span-2">
+              <div class="mb-3 flex items-center justify-between"><h2 class="text-sm font-semibold">Naujausi skambučiai</h2><button data-tab="calls" class="text-[11px] text-violet-300 hover:text-violet-200">Visi skambučiai →</button></div>
+              ${callTable(cache.calls || [], true)}
+            </div>
+          </div>`;
+      } else if (activeTab === 'companies') {
+        $('#panel').innerHTML = `
+          <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+            <div><h2 class="text-sm font-semibold">Įmonės</h2><p class="mt-1 text-[11px] text-white/35">Plano pakeitimas iškart aktyvuoja arba išjungia mokamas funkcijas.</p></div>
+            <span class="text-[10px] text-white/30">${(cache.companies || []).length} įrašai</span>
+          </div>
+          ${companyTable(cache.companies || [], false)}`;
+      } else if (activeTab === 'appointments') {
+        $('#panel').innerHTML = `
+          <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+            <div><h2 class="text-sm font-semibold">Vizitai</h2><p class="mt-1 text-[11px] text-white/35">Visų įmonių kalendorių įrašai, naujausi viršuje.</p></div>
+            <span class="text-[10px] text-white/30">${(cache.appointments || []).length} įrašai</span>
+          </div>
+          ${appointmentTable(cache.appointments || [], false)}`;
+      } else {
+        $('#panel').innerHTML = `
+          <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+            <div><h2 class="text-sm font-semibold">Skambučiai</h2><p class="mt-1 text-[11px] text-white/35">Visų įmonių skambučių suvestinės, naujausi viršuje.</p></div>
+            <span class="text-[10px] text-white/30">${(cache.calls || []).length} įrašai</span>
+          </div>
+          ${callTable(cache.calls || [], false)}`;
+      }
+    }
+
+    function companyTable(companies, compact) {
+      if (!companies.length) return emptyState('Įmonių dar nėra.');
+      return `<div class="table-shell"><table><thead><tr>
+        <th>Įmonė</th><th>Kontaktai</th><th>Planas</th><th>Vizitai / skambučiai</th><th>Sukurta</th>${compact ? '' : '<th></th>'}
+      </tr></thead><tbody>${companies.map((company) => `<tr>
+        <td class="whitespace-normal"><div class="font-semibold text-white">${esc(company.name)}</div><div class="mt-1 text-[10px] text-white/35">${esc(company.ownerEmail || 'El. paštas nerastas')}</div></td>
+        <td class="whitespace-normal"><div>${esc(company.phone || '—')}</div><div class="mt-1 text-[10px] text-white/35">${esc(company.address || '')}</div></td>
+        <td>${compact
+          ? `<span class="rounded-full bg-white/10 px-2.5 py-1 text-[10px]">${esc(PLAN_LABELS[company.planCode] || company.planCode)}</span>`
+          : `<select data-plan="${esc(company.id)}" class="rounded-lg border border-white/15 bg-[#18181b] px-2.5 py-2 text-[11px] text-white outline-none focus:border-violet-400">
+              ${Object.entries(PLAN_LABELS).map(([code, label]) => `<option value="${code}" ${company.planCode === code ? 'selected' : ''}>${esc(label)}</option>`).join('')}
+            </select>`}</td>
+        <td>${company.appointments} / ${company.calls}</td>
+        <td>${formatDate(company.createdAt)}</td>
+        ${compact ? '' : `<td><button data-save-plan="${esc(company.id)}" class="rounded-lg bg-white px-3 py-2 text-[10px] font-semibold text-zinc-950 hover:bg-zinc-200">Išsaugoti</button></td>`}
+      </tr>`).join('')}</tbody></table></div>`;
+    }
+
+    function appointmentTable(appointments, compact) {
+      if (!appointments.length) return emptyState('Vizitų dar nėra.');
+      return `<div class="table-shell"><table><thead><tr>
+        <th>Laikas</th><th>Įmonė</th><th>Klientas</th><th>Paslauga</th><th>Būsena</th>
+      </tr></thead><tbody>${appointments.map((appointment) => `<tr>
+        <td>${formatDate(appointment.startsAt)}</td>
+        <td class="whitespace-normal">${esc(appointment.companyName)}</td>
+        <td class="whitespace-normal"><div>${esc(appointment.customerName)}</div><div class="mt-1 text-[10px] text-white/35">${esc(appointment.customerPhone)}</div></td>
+        <td class="whitespace-normal">${esc(appointment.serviceName)}</td>
+        <td><span class="rounded-full px-2.5 py-1 text-[10px] ${appointment.status === 'cancelled' ? 'bg-rose-500/15 text-rose-300' : appointment.status === 'completed' ? 'bg-zinc-500/20 text-zinc-300' : 'bg-emerald-500/15 text-emerald-300'}">${esc(STATUS_LABELS[appointment.status] || appointment.status)}</span></td>
+      </tr>`).join('')}</tbody></table></div>`;
+    }
+
+    function callTable(calls, compact) {
+      if (!calls.length) return emptyState('Skambučių dar nėra.');
+      return `<div class="table-shell"><table><thead><tr>
+        <th>Laikas</th><th>Įmonė</th><th>Klientas</th><th>Suvestinė</th><th>Būsena</th>
+      </tr></thead><tbody>${calls.map((call) => `<tr>
+        <td>${formatDate(call.createdAt)}</td>
+        <td class="whitespace-normal">${esc(call.companyName)}</td>
+        <td class="whitespace-normal"><div>${esc(call.customerName || '—')}</div><div class="mt-1 text-[10px] text-white/35">${esc(call.customerPhone || '')}</div></td>
+        <td class="max-w-md whitespace-normal text-white/60">${esc(call.summary || '—')}</td>
+        <td>${esc(call.status || '—')}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+    }
+
+    function emptyState(message) {
+      return `<div class="rounded-2xl border border-dashed border-white/15 bg-white/[.02] p-8 text-center text-xs text-white/35">${esc(message)}</div>`;
+    }
+
+    function formatDate(value) {
+      if (!value) return '—';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? '—' : dateTimeFormat.format(date);
+    }
+
+    $('#loginForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const candidate = $('#keyInput').value.trim();
+      if (!candidate) return showLogin('Įveskite prieigos raktą.');
+      login(candidate);
+    });
+
+    $('#tabs').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-tab]');
+      if (button) load(button.dataset.tab);
+    });
+
+    $('#panel').addEventListener('click', async (event) => {
+      const tabButton = event.target.closest('[data-tab]');
+      if (tabButton) { load(tabButton.dataset.tab); return; }
+
+      const saveButton = event.target.closest('[data-save-plan]');
+      if (!saveButton) return;
+      const id = saveButton.dataset.savePlan;
+      const select = document.querySelector(`[data-plan="${id}"]`);
+      if (!select) return;
+      saveButton.disabled = true;
+      saveButton.textContent = 'Saugoma…';
+      try {
+        await api(`/api/admin/companies/${encodeURIComponent(id)}/plan`, {
+          method: 'POST',
+          body: JSON.stringify({ planCode: select.value }),
+        });
+        toast('Planas atnaujintas.');
+        await load(activeTab === 'companies' ? 'companies' : 'overview');
+      } catch (error) {
+        toast(error.message, true);
+        saveButton.disabled = false;
+        saveButton.textContent = 'Išsaugoti';
+      }
+    });
+
+    $('#refreshButton').addEventListener('click', () => load(activeTab));
+    $('#logoutButton').addEventListener('click', () => {
+      key = '';
+      sessionStorage.removeItem(STORAGE_KEY);
+      cache = {};
+      showLogin();
+    });
+
+    if (key) {
+      login(key);
+    } else {
+      showLogin();
+    }
+  </script>
+</body>
+</html>

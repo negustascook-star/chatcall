@@ -24,15 +24,17 @@ neveiks.
 
 1. Render Dashboard → **New → Blueprint**.
 2. Prijunkite GitHub repo `negustascook-star/chatcall`.
-3. Render perskaitys `render.yaml` ir paprašys įvesti `SUPABASE_SECRET_KEY`
-   bei `SUPABASE_PUBLISHABLE_KEY`.
+3. Render perskaitys `render.yaml` ir paprašys įvesti `SUPABASE_SECRET_KEY`,
+   `SUPABASE_PUBLISHABLE_KEY` bei `ADMIN_KEY`.
 4. `SUPABASE_SECRET_KEY` – **Secret key** reikšmė iš Supabase
    (**Project Settings → API Keys → Secret keys**). Ji prasideda `sb_secret_`.
    Galima naudoti ir seną `service_role` JWT raktą, prasidedantį `eyJ`.
 5. `SUPABASE_PUBLISHABLE_KEY` – **Publishable key** reikšmė, prasidedanti
    `sb_publishable_`. Ji skirta naršyklei (`auth.html`, `app.html`) ir yra
    vieša, todėl jos slėpti nereikia. Teises riboja Supabase RLS.
-6. Paleiskite deploy.
+6. `ADMIN_KEY` – slaptažodis, kuriuo apsaugota `/admin.html` panelė. Nustatykite
+   ilgą atsitiktinę reikšmę; jos necommitinkite į Git.
+7. Paleiskite deploy.
 
 ### Variantas B: Rankinis Web Service
 
@@ -50,6 +52,7 @@ Aplinkos kintamieji:
 | `SUPABASE_TENANT_ID` | `demo-tire` |
 | `SUPABASE_SECRET_KEY` | Jūsų serverio Secret key (tik Render aplinkoje) |
 | `SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_...` (viešas raktas `auth.html` ir `app.html`) |
+| `ADMIN_KEY` | Slaptažodis `/admin.html` panelei (tik Render aplinkoje) |
 | `DATA_DIR` | `./data` |
 | `NODE_VERSION` | `22.20.0` |
 
@@ -98,7 +101,24 @@ svetainės lauke **API prisijungimas** įrašyk Render API adresą. API leidžia
 CORS užklausas iš kitų domenų. Šiuo metu API neturi autentifikacijos, todėl
 viešai atidaryta ji tinka tik demonstracijai.
 
-## 5. Failų saugykla
+## 5. Administratoriaus panelė
+
+Atidarykite:
+
+```text
+https://aicall.lt/admin.html
+```
+
+Įveskite `ADMIN_KEY` reikšmę. Panelė leidžia matyti įmones, jų savininkus,
+vizitus, skambučius ir aktyvuoti planą (`pending`, `receptionist`, `warehouse`).
+Prieiga tikrinama serverio pusėje, o Supabase secret key niekada nepatenka į
+naršyklę.
+
+Jei pamiršote ar norite pakeisti raktą, pakeiskite `ADMIN_KEY` Render
+**Environment** skiltyje ir paleiskite naują deploy. Nenaudokite trumpo rakto
+produkcijoje.
+
+## 6. Failų saugykla
 
 Nemokamas Render planas turi laikiną diską. Supabase saugomos tik `services` ir
 `inventory` lentelės, o klientų poreikiai, transkriptai ir `calls/` failai rašomi
@@ -110,7 +130,7 @@ Jei reikia išsaugoti šiuos failus:
   `/opt/render/project/src/data` (pavyzdys yra `render.yaml` komentaruose);
 - arba ateityje perkelkite poreikius ir transkriptus į DB / object storage.
 
-## 6. Lokalus `.env`
+## 7. Lokalus `.env`
 
 Lokaliai galima naudoti `.env` failą (jis ignoruojamas Git):
 
@@ -119,6 +139,8 @@ CATALOG_SOURCE=supabase
 SUPABASE_URL=https://lzongluhbmyasadscuri.supabase.co
 SUPABASE_TENANT_ID=demo-tire
 SUPABASE_SECRET_KEY=JUSU_SECRET_KEY
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+ADMIN_KEY=JUSU_ADMIN_SLAPTAZODIS
 ```
 
 Render atveju `.env` nereikia – naudojami Render aplinkos kintamieji.

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { CallAgent } from "../agent/callAgent.js";
+import { SupabaseAdmin } from "../supabase/admin.js";
 import { SupabaseCatalog, readSupabaseConfig } from "../supabase/catalog.js";
 import { TenantRepository } from "../tenants/tenantRepository.js";
 import { createApiServer } from "./server.js";
@@ -30,6 +31,16 @@ const agent = new CallAgent({ dataDir, tenants });
 const websiteFile = path.resolve(process.cwd(), "index.html");
 const publicKey = process.env.SUPABASE_PUBLISHABLE_KEY?.trim() || process.env.SUPABASE_ANON_KEY?.trim();
 const supabaseUrl = process.env.SUPABASE_URL?.trim();
+const configuredAdminKey = process.env.ADMIN_KEY?.trim();
+// Keep the requested demo key working on a fresh deployment. Production should
+// always override this with a long random ADMIN_KEY in Render.
+const adminKey = configuredAdminKey || "ADMIN123";
+const secretKey = process.env.SUPABASE_SECRET_KEY?.trim() || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+// The admin dashboard is optional. Its Supabase client stays on the server and
+// is only created when both the URL and the secret key are configured.
+const admin = supabaseUrl && secretKey
+  ? new SupabaseAdmin({ url: supabaseUrl, key: secretKey })
+  : undefined;
 const configuredWarehousePrice = process.env.WAREHOUSE_PLAN_PRICE_EUR?.trim();
 const warehousePlanPriceEur = configuredWarehousePrice && /^\d+(\.\d{1,2})?$/.test(configuredWarehousePrice)
   ? Number(configuredWarehousePrice)
@@ -40,12 +51,18 @@ const server = createApiServer({
   // This must be a browser-safe publishable/anon key. Never expose the secret key.
   supabasePublicKey: publicKey,
   warehousePlanPriceEur: validWarehousePrice,
+  adminKey,
+  admin,
 });
 
 server.listen(port, () => {
   console.log(`Chatcall API veikia: http://localhost:${port}`);
   console.log(`Duomenų katalogas: ${dataDir}`);
   console.log(`Paslaugų ir sandėlio šaltinis: ${catalogSource}`);
+  console.log(`Administratoriaus panelė: ${adminKey && admin ? "įjungta (/admin.html)" : "neįjungta"}`);
+  if (!configuredAdminKey) {
+    console.warn("ADMIN_KEY nenustatytas – naudojamas numatytasis demonstracinis raktas. Produkcijoje nustatykite savo ADMIN_KEY.");
+  }
   console.log("Sveikatos patikra: GET /health");
 });
 

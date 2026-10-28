@@ -1,8 +1,10 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import path from "node:path";
 import { CallAgent, CallEndedError, CallNotFoundError } from "../agent/callAgent.js";
 import { RequestService } from "../requests/requestService.js";
+import { isPlanCode, type AdminDataSource } from "../supabase/admin.js";
 import { TenantRepository } from "../tenants/tenantRepository.js";
 
 export interface ApiDependencies {
@@ -13,9 +15,28 @@ export interface ApiDependencies {
   websiteFile?: string;
   authFile?: string;
   appFile?: string;
+  adminFile?: string;
   supabaseUrl?: string;
   supabasePublicKey?: string;
   warehousePlanPriceEur?: number;
+  adminKey?: string;
+  admin?: AdminDataSource;
+}
+
+interface ServerContext {
+  agent: CallAgent;
+  tenants: TenantRepository;
+  requests: RequestService;
+  catalogSource: "json" | "supabase";
+  websiteFile: string;
+  authFile: string;
+  appFile: string;
+  adminFile: string;
+  supabaseUrl?: string;
+  supabasePublicKey?: string;
+  warehousePlanPriceEur?: number;
+  adminKey?: string;
+  admin?: AdminDataSource;
 }
 
 class HttpError extends Error {
@@ -28,16 +49,38 @@ class HttpError extends Error {
   }
 }
 
+const ADMIN_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+const ADMIN_MAX_ATTEMPTS = 10;
+const adminAttempts = new Map<string, { count: number; resetAt: number }>();
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function createApiServer(deps: ApiDependencies): Server {
   const tenants = deps.tenants ?? new TenantRepository(deps.dataDir);
   const requests = new RequestService(deps.dataDir);
   const websiteFile = deps.websiteFile ?? path.resolve(process.cwd(), "index.html");
   const authFile = deps.authFile ?? path.join(path.dirname(websiteFile), "auth.html");
   const appFile = deps.appFile ?? path.join(path.dirname(websiteFile), "app.html");
+  const adminFile = deps.adminFile ?? path.join(path.dirname(websiteFile), "admin.html");
+  const context: ServerContext = {
+    agent: deps.agent,
+    tenants,
+    requests,
+    catalogSource: deps.catalogSource ?? "json",
+    websiteFile,
+    authFile,
+    appFile,
+    adminFile,
+    supabaseUrl: deps.supabaseUrl,
+    supabasePublicKey: deps.supabasePublicKey,
+    warehousePlanPriceEur: deps.warehousePlanPriceEur,
+    adminKey: deps.adminKey,
+    admin: deps.admin,
+  };
 
   return createServer(async (req, res) => {
+    const adminApi = (req.url ?? "").startsWith("/api/admin/");
     try {
-      await route(req, res, deps.agent, tenants, requests, deps.catalogSource ?? "json", websiteFile, authFile, appFile, deps.supabaseUrl, deps.supabasePublicKey, deps.warehousePlanPriceEur);
+      await route(req, res, context);
     } catch (error) {
       if (res.headersSent) {
         res.end();
@@ -45,7 +88,7 @@ export function createApiServer(deps: ApiDependencies): Server {
       }
 
       if (error instanceof HttpError) {
-        sendJson(res, error.status, { error: error.message });
+        sendJson(res, error.status, { error: error.message }, !adminApi);
         return;
       }
       if (error instanceof CallNotFoundError) {
@@ -58,7 +101,7 @@ export function createApiServer(deps: ApiDependencies): Server {
       }
 
       console.error(error);
-      sendJson(res, 500, { error: "Vidinė serverio klaida." });
+      sendJson(res, 500, { error: "Vidinė serverio klaida." }, !adminApi);
     }
   });
 }
@@ -66,16 +109,7 @@ export function createApiServer(deps: ApiDependencies): Server {
 async function route(
   req: IncomingMessage,
   res: ServerResponse,
-  agent: CallAgent,
-  tenants: TenantRepository,
-  requests: RequestService,
-  catalogSource: "json" | "supabase",
-  websiteFile: string,
-  authFile: string,
-  appFile: string,
-  supabaseUrl?: string,
-  supabasePublicKey?: string,
-  warehousePlanPriceEur?: number,
+  ctx: ServerContext,
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -86,27 +120,36 @@ async function route(
   }
 
   if (method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
-    await sendWebsite(res, websiteFile);
+    await sendWebsite(res, ctx.websiteFile);
     return;
   }
 
   if (method === "GET" && url.pathname === "/auth.html") {
-    await sendWebsite(res, authFile);
+    await sendWebsite(res, ctx.authFile);
     return;
   }
 
   if (method === "GET" && url.pathname === "/app.html") {
-    await sendWebsite(res, appFile);
+    await sendWebsite(res, ctx.appFile);
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/admin.html") {
+    await sendWebsite(res, ctx.adminFile);
     return;
   }
 
   if (method === "GET" && url.pathname === "/api/public-config") {
-    sendJson(res, 200, { supabaseUrl: supabaseUrl ?? null, supabasePublicKey: supabasePublicKey ?? null, warehousePlanPriceEur: warehousePlanPriceEur ?? null });
+    sendJson(res, 200, {
+      supabaseUrl: ctx.supabaseUrl ?? null,
+      supabasePublicKey: ctx.supabasePublicKey ?? null,
+      warehousePlanPriceEur: ctx.warehousePlanPriceEur ?? null,
+    });
     return;
   }
 
   if (method === "GET" && url.pathname === "/i18n.js") {
-    await sendJavaScript(res, path.join(path.dirname(websiteFile), "i18n.js"));
+    await sendJavaScript(res, path.join(path.dirname(ctx.websiteFile), "i18n.js"));
     return;
   }
 
@@ -114,14 +157,23 @@ async function route(
     sendJson(res, 200, {
       ok: true,
       service: "chatcall",
-      catalogSource,
+      catalogSource: ctx.catalogSource,
       time: new Date().toISOString(),
     });
     return;
   }
 
+  if (url.pathname.startsWith("/api/admin/")) {
+    requireAdmin(req, ctx.adminKey);
+    if (!ctx.admin) {
+      throw new HttpError(503, "Administratoriaus duomenų šaltinis nesukonfigūruotas. Nustatykite SUPABASE_SECRET_KEY.");
+    }
+    await routeAdmin(req, res, url, ctx.admin);
+    return;
+  }
+
   if (method === "GET" && url.pathname === "/api/tenants") {
-    const list = await tenants.list();
+    const list = await ctx.tenants.list();
     sendJson(res, 200, {
       tenants: list.map(({ tenant, services, inventory, faq }) => ({
         id: tenant.id,
@@ -151,7 +203,7 @@ async function route(
       throw new HttpError(400, "channel turi būti 'text' arba 'phone'.");
     }
 
-    const result = await agent.startCall({
+    const result = await ctx.agent.startCall({
       tenantId,
       to,
       from,
@@ -163,7 +215,7 @@ async function route(
 
   const callMatch = url.pathname.match(/^\/api\/calls\/([^/]+)$/);
   if (method === "GET" && callMatch?.[1]) {
-    const session = agent.getSession(decodeURIComponent(callMatch[1]));
+    const session = ctx.agent.getSession(decodeURIComponent(callMatch[1]));
     if (!session) throw new CallNotFoundError(callMatch[1]);
     sendJson(res, 200, session);
     return;
@@ -176,14 +228,14 @@ async function route(
     const text = optionalString(record, "text");
     if (!text) throw new HttpError(400, "Laukas 'text' yra privalomas.");
 
-    const result = await agent.handleMessage(decodeURIComponent(messageMatch[1]), text);
+    const result = await ctx.agent.handleMessage(decodeURIComponent(messageMatch[1]), text);
     sendJson(res, 200, result);
     return;
   }
 
   const endMatch = url.pathname.match(/^\/api\/calls\/([^/]+)\/end$/);
   if (method === "POST" && endMatch?.[1]) {
-    const result = await agent.endCall(decodeURIComponent(endMatch[1]));
+    const result = await ctx.agent.endCall(decodeURIComponent(endMatch[1]));
     sendJson(res, 200, result);
     return;
   }
@@ -191,7 +243,7 @@ async function route(
   const requestsMatch = url.pathname.match(/^\/api\/tenants\/([^/]+)\/requests$/);
   if (method === "GET" && requestsMatch?.[1]) {
     const tenantId = decodeURIComponent(requestsMatch[1]);
-    const tenant = await tenants.get(tenantId);
+    const tenant = await ctx.tenants.get(tenantId);
     if (!tenant) throw new HttpError(404, "Tenant nerastas.");
 
     const date = url.searchParams.get("date") ?? undefined;
@@ -199,12 +251,115 @@ async function route(
       throw new HttpError(400, "date turi būti YYYY-MM-DD formatu.");
     }
 
-    const saved = await requests.list(tenantId, date);
+    const saved = await ctx.requests.list(tenantId, date);
     sendJson(res, 200, { requests: saved });
     return;
   }
 
   throw new HttpError(404, "Maršrutas nerastas.");
+}
+
+async function routeAdmin(
+  req: IncomingMessage,
+  res: ServerResponse,
+  url: URL,
+  admin: AdminDataSource,
+): Promise<void> {
+  const method = req.method ?? "GET";
+
+  if (method === "GET" && url.pathname === "/api/admin/overview") {
+    const overview = await admin.overview();
+    sendJson(res, 200, overview, false);
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/api/admin/companies") {
+    const companies = await admin.listCompanies();
+    sendJson(res, 200, { companies }, false);
+    return;
+  }
+
+  const planMatch = url.pathname.match(/^\/api\/admin\/companies\/([^/]+)\/plan$/);
+  if (method === "POST" && planMatch?.[1]) {
+    const id = decodeURIComponent(planMatch[1]);
+    if (!UUID_PATTERN.test(id)) {
+      throw new HttpError(400, "Neteisingas įmonės ID.");
+    }
+    const body = await readJsonBody(req);
+    const record = requireRecord(body);
+    if (!isPlanCode(record.planCode)) {
+      throw new HttpError(400, "planCode turi būti pending, receptionist arba warehouse.");
+    }
+    const company = await admin.updateCompanyPlan(id, record.planCode);
+    if (!company) throw new HttpError(404, "Įmonė nerasta.");
+    sendJson(res, 200, { company }, false);
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/api/admin/appointments") {
+    const appointments = await admin.listAppointments(readLimit(url));
+    sendJson(res, 200, { appointments }, false);
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/api/admin/calls") {
+    const calls = await admin.listCalls(readLimit(url));
+    sendJson(res, 200, { calls }, false);
+    return;
+  }
+
+  throw new HttpError(404, "Administratoriaus maršrutas nerastas.");
+}
+
+function requireAdmin(req: IncomingMessage, adminKey?: string): void {
+  if (!adminKey) {
+    throw new HttpError(503, "Administratoriaus panelė nesukonfigūruota. Nustatykite ADMIN_KEY.");
+  }
+
+  const address = req.socket.remoteAddress ?? "unknown";
+  const now = Date.now();
+  const previous = adminAttempts.get(address);
+  if (previous && previous.resetAt <= now) {
+    adminAttempts.delete(address);
+  } else if (previous && previous.count >= ADMIN_MAX_ATTEMPTS) {
+    throw new HttpError(429, "Per daug neteisingų bandymų. Bandykite vėliau.");
+  }
+
+  const provided = readAdminKey(req);
+  if (!secureEqual(provided, adminKey)) {
+    const current = adminAttempts.get(address);
+    adminAttempts.set(address, {
+      count: (current?.count ?? 0) + 1,
+      resetAt: current?.resetAt ?? now + ADMIN_ATTEMPT_WINDOW_MS,
+    });
+    throw new HttpError(401, "Neteisingas administratoriaus raktas.");
+  }
+
+  adminAttempts.delete(address);
+}
+
+function readAdminKey(req: IncomingMessage): string {
+  const direct = req.headers["x-admin-key"];
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+  const authorization = req.headers.authorization;
+  if (authorization?.startsWith("Bearer ")) return authorization.slice(7).trim();
+  return "";
+}
+
+function secureEqual(provided: string, expected: string): boolean {
+  const actualHash = createHash("sha256").update(provided).digest();
+  const expectedHash = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(actualHash, expectedHash);
+}
+
+function readLimit(url: URL): number {
+  const raw = url.searchParams.get("limit");
+  if (raw === null || raw === "") return 100;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1 || value > 500) {
+    throw new HttpError(400, "limit turi būti sveikas skaičius nuo 1 iki 500.");
+  }
+  return value;
 }
 
 function requireRecord(value: unknown): Record<string, unknown> {
@@ -297,15 +452,18 @@ async function sendJavaScript(res: ServerResponse, file: string): Promise<void> 
   res.end(script);
 }
 
-function sendJson(res: ServerResponse, status: number, payload: unknown): void {
+function sendJson(res: ServerResponse, status: number, payload: unknown, cors = true): void {
   const body = JSON.stringify(payload);
-  res.writeHead(status, {
+  const headers: Record<string, string | number> = {
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(body),
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  });
+  };
+  if (cors) {
+    headers["Access-Control-Allow-Origin"] = "*";
+    headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS";
+    headers["Access-Control-Allow-Headers"] = "Content-Type";
+  }
+  res.writeHead(status, headers);
   res.end(body);
 }
 

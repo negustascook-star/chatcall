@@ -1,19 +1,666 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#09090b"><script src="./i18n.js" defer></script><title>AIcall Business Workspace</title><script src="https://cdn.tailwindcss.com"></script><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><style>body{font-family:Inter,ui-sans-serif,system-ui}.field{width:100%;border:1px solid #e4e4e7;border-radius:10px;padding:11px 12px;font-size:13px;outline:none}.field:focus{border-color:#8b7aff}.navbtn.active{background:#f3f0ff;color:#6847d9;font-weight:600}</style></head>
-<body class="min-h-screen bg-[#f7f7f9] text-zinc-900"><div id="loading" class="grid min-h-screen place-items-center text-sm text-zinc-500">Checking account…</div><div id="app" class="hidden min-h-screen flex flex-col md:flex-row"><aside class="w-full shrink-0 border-b border-zinc-200 bg-white p-4 md:w-64 md:border-b-0 md:border-r md:p-5"><div class="mt-4 rounded-xl border border-zinc-100 bg-zinc-50 p-3"><div id="companyLabel" class="truncate text-xs font-semibold">My business</div><div id="emailLabel" class="mt-1 truncate text-[10px] text-zinc-500"></div></div><nav id="nav" class="mt-6 space-y-1"></nav><button id="logout" class="mt-8 w-full rounded-lg border border-zinc-200 px-3 py-2 text-left text-xs text-zinc-600">Log out</button></aside><main class="min-w-0 flex-1 p-5 md:p-9"><div class="mx-auto max-w-6xl"><div class="flex items-center justify-between"><div><div class="text-[10px] font-semibold uppercase tracking-widest text-violet-600">AIcall · for businesses</div><h1 id="title" class="mt-2 text-2xl font-semibold tracking-tight">Overview</h1></div><span id="planBadge" class="rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-semibold text-amber-700">Plan activation required</span></div><div id="notice" class="mt-5 hidden rounded-xl border px-4 py-3 text-xs"></div><section id="content" class="mt-6"></section></div></main></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
-const labels=['Overview','Calendar','Calls','Specialists','Services','Inventory','Phone setup','Business info & FAQs','Plan & billing','Settings'];const tables={Specialists:'specialists',Services:'business_services',Inventory:'business_inventory','Business info & FAQs':'business_faq'};let sb,user,company,active='Overview';const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function notice(text,bad=false){$('#notice').textContent=text;$('#notice').className='mt-5 rounded-xl border px-4 py-3 text-xs '+(bad?'border-rose-200 bg-rose-50 text-rose-700':'border-violet-200 bg-violet-50 text-violet-800')}
-async function init(){try{const cfg=await (await fetch('/api/public-config')).json();if(!cfg.supabaseUrl||!cfg.supabasePublicKey)throw Error('Account system is not configured.');sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublicKey);const {data:{user:u}}=await sb.auth.getUser();if(!u){location.href='/auth.html?mode=login';return}user=u;$('#emailLabel').textContent=u.email;const {data,error}=await sb.from('companies').select('*').limit(1).maybeSingle();if(error)throw error;company=data;$('#loading').classList.add('hidden');$('#app').classList.remove('hidden');$('#nav').innerHTML=labels.map((x,i)=>`<button class="navbtn w-full rounded-lg px-3 py-2.5 text-left text-[11px] text-zinc-600 ${x===active?'active':''}" data-label="${esc(x)}">${esc(x)}</button>`).join('');$('#nav').onclick=e=>{let b=e.target.closest('[data-label]');if(b){active=b.dataset.label;render()}};$('#logout').onclick=async()=>{await sb.auth.signOut();location.href='/'};if(company)$('#companyLabel').textContent=company.name;else active='Business info & FAQs';$('#planBadge').textContent=company?.plan_code&&company.plan_code!=='pending'?'Plan active':'Payment not confirmed';render()}catch(e){$('#loading').innerHTML=`Could not open the account: ${esc(e.message)} <a class="text-violet-600" href="/auth.html?mode=login">Log in</a>`}}
-function input(label,name,type='text',value=''){return `<label class="block text-xs font-medium text-zinc-700">${label}<input class="field mt-2" name="${name}" type="${type}" value="${esc(value)}" ${name==='name'?'required':''}></label>`}function formCard(title,fields,btn='Save'){return `<form id="dataForm" class="rounded-2xl border border-zinc-200 bg-white p-5 md:p-6"><h2 class="mb-5 text-sm font-semibold">${title}</h2><div class="grid gap-4 sm:grid-cols-2">${fields}</div><button class="mt-5 rounded-xl bg-zinc-900 px-4 py-3 text-xs font-semibold text-white">${btn}</button></form>`}function empty(text){return `<div class="rounded-2xl border border-dashed border-zinc-300 bg-white p-9 text-center text-xs leading-6 text-zinc-500">${text}</div>`}
-async function render(){document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.label===active));$('#title').textContent=active;$('#notice').classList.add('hidden');if(active==='Business info & FAQs'&&!company){$('#content').innerHTML=`<p class="mb-5 max-w-2xl text-xs leading-6 text-zinc-500">Start with your business details. You can add services, specialists, and approved answers next, and update them later.</p>${formCard('Business details',input('Business name','name')+input('Address','address')+input('Business phone number','phone','tel')+input('Opening hours (e.g. Mon–Fri, 8:00 am–6:00 pm)','hours')+input('Staff contact for unresolved requests','unresolved_contact','tel'))}`;$('#dataForm').onsubmit=async e=>{e.preventDefault();let f=Object.fromEntries(new FormData(e.currentTarget));try{const{data,error}=await sb.from('companies').insert({name:f.name,address:f.address,phone:f.phone,opening_hours:{display:f.hours},unresolved_contact:f.unresolved_contact}).select().single();if(error)throw error;company=data;$('#companyLabel').textContent=data.name;active='Overview';render();notice('Business profile created. Next, add services, specialists, and approved answers.')}catch(x){notice(x.message,true)}};return}
-if(!company){$('#content').innerHTML=empty('Start with your business details.');return}
-if(active==='Overview'){const [calls,appointments,specialists]=await Promise.all([sb.from('business_calls').select('*',{count:'exact'}).eq('company_id',company.id).order('created_at',{ascending:false}).limit(5),sb.from('appointments').select('*',{count:'exact'}).eq('company_id',company.id).gte('starts_at',new Date().toISOString()).order('starts_at',{ascending:true}).limit(5),sb.from('specialists').select('id',{count:'exact',head:true}).eq('company_id',company.id).eq('active',true)]);$('#content').innerHTML=`<div class="grid gap-3 sm:grid-cols-3">${[['Calls',calls.count||0],['Upcoming appointments',appointments.count||0],['Active specialists',specialists.count||0]].map(([a,b])=>`<div class="rounded-2xl border border-zinc-200 bg-white p-5"><div class="text-xs text-zinc-500">${a}</div><div class="mt-3 text-3xl font-semibold">${b}</div></div>`).join('')}</div><div class="mt-4 grid gap-4 lg:grid-cols-2">${calls.data?.length?calls.data.map(r=>`<div class="mb-2 rounded-xl border bg-white p-4 text-xs"><b>${esc(r.customer_name||'Customer')}</b><div class="mt-1 text-zinc-500">${esc(r.customer_phone)} · ${esc(r.summary)}</div></div>`).join(''):empty('No call records yet.')}${appointments.data?.length?appointments.data.map(r=>`<div class="mb-2 rounded-xl border bg-white p-4 text-xs"><b>${esc(r.customer_name)}</b><div class="mt-1 text-zinc-500">${esc(r.service_name)} · ${esc(r.starts_at)}</div></div>`).join(''):empty('No appointments scheduled yet.')}</div><div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900">Phone service is not configured yet. Call logs will appear when telephony is connected.</div>`;return}
-if(active==='Calendar'||active==='Calls'){const t=active==='Calendar'?'appointments':'business_calls';const{data,error}=await sb.from(t).select('*').eq('company_id',company.id).order(active==='Calendar'?'starts_at':'created_at',{ascending:true}).limit(100);$('#content').innerHTML=error?empty(esc(error.message)):data.length?`<div class="overflow-x-auto rounded-2xl border bg-white"><table class="w-full text-left text-xs"><tbody>${data.map(r=>`<tr class="border-b"><td class="p-4">${esc(r.customer_name||'Customer')}</td><td class="p-4">${esc(r.service_name||r.summary||'')}</td><td class="p-4">${esc(r.starts_at||r.created_at)}</td></tr>`).join('')}</tbody></table></div>`:empty(active==='Calendar'?'No appointments booked yet.':'No call records yet.');return}
-if(active==='Inventory'&&company.plan_code!=='warehouse'){$('#content').innerHTML=`<div class="rounded-2xl border border-zinc-200 bg-white p-6"><h2 class="text-sm font-semibold">Inventory is inactive</h2><p class="mt-3 text-xs leading-6 text-zinc-500">Inventory is part of the warehouse plan. Payments are not configured yet, so this feature cannot be activated in this deployment.</p><a href="/\#pricing" class="mt-4 inline-block rounded-xl border px-4 py-3 text-xs">Contact us about the plan</a></div>`;return}
-if(tables[active]){const table=tables[active],{data,error}=await sb.from(table).select('*').eq('company_id',company.id).order('created_at',{ascending:false}).limit(100);const cols=active==='Services'?input('Service name','name')+input('Price (€)','price','number')+input('Duration (min.)','duration','number'):active==='Specialists'?input('Specialist name','name')+input('Qualifications','qualifications')+input('Working schedule','schedule')+input('Unavailable periods','unavailable_periods'):active==='Inventory'?input('Product name','product_name')+input('SKU','sku')+input('Quantity','quantity','number'):input('Common question','question')+input('Approved answer','answer');$('#content').innerHTML=formCard(`Add: ${active}`,cols,'Add record')+(error?empty(esc(error.message)):data.length?`<div class="mt-4 space-y-2">${data.map(row=>`<div class="rounded-xl border bg-white p-4 text-xs">${esc(row.name||row.product_name||row.question)}${row.price_eur!=null?' · '+esc(row.price_eur)+' €':''}${row.duration_minutes?' · '+esc(row.duration_minutes)+' min.':''}${row.quantity!=null?' · Stock: '+esc(row.quantity):''}${row.qualifications?' · '+esc(row.qualifications):''}</div>`).join('')}</div>`:empty(`No records yet in „${active}“.`));$('#dataForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));let row={company_id:company.id};if(active==='Services')Object.assign(row,{name:f.name,price_eur:f.price?Number(f.price):null,duration_minutes:Number(f.duration||30)});if(active==='Specialists')Object.assign(row,{name:f.name,qualifications:f.qualifications,working_schedule:{display:f.schedule},unavailable_periods:{display:f.unavailable_periods}});if(active==='Inventory')Object.assign(row,{product_name:f.product_name,sku:f.sku,quantity:Number(f.quantity||0)});if(active==='Business info & FAQs')Object.assign(row,{question:f.question,answer:f.answer});const{error}=await sb.from(table).insert(row);if(error)notice(error.message,true);else render()};return}
-if(active==='Phone setup'){$('#content').innerHTML=`<div class="rounded-2xl border border-zinc-200 bg-white p-6"><h2 class="text-sm font-semibold">Phone setup</h2><p class="mt-3 text-xs leading-6 text-zinc-500">No telephony provider is connected to this account. Call handling is inactive.</p><span class="mt-4 inline-flex rounded-full bg-zinc-100 px-3 py-1.5 text-[10px] font-semibold text-zinc-600">Not connected</span></div>`;return}
-if(active==='Plan & billing'){$('#content').innerHTML=`<div class="rounded-2xl border border-zinc-200 bg-white p-6"><h2 class="text-sm font-semibold">${company.plan_code==='pending'?'Plan activation required':'Active plan'}</h2><p class="mt-3 text-xs leading-6 text-zinc-500">Selected plan: ${esc(new URLSearchParams(location.search).get('plan')||company.plan_code)}. Payment provider is not configured; paid features are inactive.</p><p class="mt-2 text-xs text-zinc-500">The platform administrator sets the inventory plan price. If no price is configured, contact us for pricing.</p><a href="/#pricing" class="mt-4 inline-block rounded-xl bg-zinc-900 px-4 py-3 text-xs font-semibold text-white">View plans</a></div>`;return}
-if(active==='Settings'){$('#content').innerHTML=formCard('Business information',input('Business name','name','text',company.name)+input('Address','address','text',company.address)+input('Phone number','phone','tel',company.phone)+input('Opening hours','hours','text',company.opening_hours?.display||'')+input('Contact for unresolved requests','unresolved_contact','tel',company.unresolved_contact),'Save changes');$('#dataForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));const{error}=await sb.from('companies').update({name:f.name,address:f.address,phone:f.phone,opening_hours:{...company.opening_hours,display:f.hours},unresolved_contact:f.unresolved_contact,updated_at:new Date().toISOString()}).eq('id',company.id);if(error)notice(error.message,true);else{company={...company,...f,opening_hours:{...company.opening_hours,display:f.hours}};$('#companyLabel').textContent=company.name;notice('Changes saved.')}};return}
-}
-init();
-</script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#09090b" />
+  <script src="./i18n.js" defer></script>
+  <title>AIcall Business Workspace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: Inter, ui-sans-serif, system-ui; }
+    .field { width: 100%; border: 1px solid #e4e4e7; border-radius: 10px; padding: 11px 12px; font-size: 13px; outline: none; background: #fff; }
+    .field:focus { border-color: #8b7aff; }
+    .navbtn.active { background: #f3f0ff; color: #6847d9; font-weight: 600; }
+    .calendar-scroll { scrollbar-width: thin; }
+    .appointment-chip { transition: background .15s ease, border-color .15s ease; }
+    .appointment-chip:hover { filter: brightness(.97); }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f7f7f9] text-zinc-900">
+  <div id="loading" class="grid min-h-screen place-items-center text-sm text-zinc-500">Checking account…</div>
+
+  <div id="app" class="hidden min-h-screen flex flex-col md:flex-row">
+    <aside class="w-full shrink-0 border-b border-zinc-200 bg-white p-4 md:w-64 md:border-b-0 md:border-r md:p-5">
+      <a href="/" class="flex items-center gap-2 text-lg font-bold tracking-tight">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-[#7054ee] text-sm text-white">A</span>
+        AIcall
+      </a>
+      <div class="mt-4 rounded-xl border border-zinc-100 bg-zinc-50 p-3">
+        <div id="companyLabel" class="truncate text-xs font-semibold">My business</div>
+        <div id="emailLabel" class="mt-1 truncate text-[10px] text-zinc-500"></div>
+      </div>
+      <nav id="nav" class="mt-6 space-y-1"></nav>
+      <button id="logout" class="mt-8 w-full rounded-lg border border-zinc-200 px-3 py-2 text-left text-xs text-zinc-600 hover:border-zinc-300">Log out</button>
+    </aside>
+
+    <main class="min-w-0 flex-1 p-5 md:p-9">
+      <div class="mx-auto max-w-6xl">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div class="text-[10px] font-semibold uppercase tracking-widest text-violet-600">AIcall · for businesses</div>
+            <h1 id="title" class="mt-2 text-2xl font-semibold tracking-tight">Overview</h1>
+          </div>
+          <span id="planBadge" class="rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-semibold text-amber-700">Plan activation required</span>
+        </div>
+        <div id="notice" class="mt-5 hidden rounded-xl border px-4 py-3 text-xs"></div>
+        <section id="content" class="mt-6"></section>
+      </div>
+    </main>
+  </div>
+
+  <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-950/40 p-4">
+    <div id="modalCard" class="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl md:p-6" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const labels = ['Overview', 'Calendar', 'Calls', 'Specialists', 'Services', 'Inventory', 'Phone setup', 'Business info & FAQs', 'Plan & billing', 'Settings'];
+    const entityTables = { Specialists: 'specialists', Services: 'business_services', Inventory: 'business_inventory' };
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const STATUS_LABELS = { confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled' };
+    const HOUR_START = 7;
+    const HOUR_END = 20;
+    const SLOT_HEIGHT = 52;
+
+    let sb;
+    let user;
+    let company;
+    let active = 'Overview';
+    const calendarState = { view: 'month', cursor: new Date() };
+    const dataState = { appointments: [], services: [], specialists: [] };
+
+    const $ = (selector) => document.querySelector(selector);
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+    const pad = (value) => String(value).padStart(2, '0');
+    const currentLocale = () => document.documentElement.lang === 'lt' ? 'lt-LT' : 'en-GB';
+
+    function notice(text, bad = false) {
+      $('#notice').textContent = text;
+      $('#notice').className = 'mt-5 rounded-xl border px-4 py-3 text-xs ' + (bad ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-violet-200 bg-violet-50 text-violet-800');
+    }
+
+    function empty(text) {
+      return `<div class="rounded-2xl border border-dashed border-zinc-300 bg-white p-9 text-center text-xs leading-6 text-zinc-500">${text}</div>`;
+    }
+
+    function input(label, name, type = 'text', value = '', extra = '') {
+      return `<label class="block text-xs font-medium text-zinc-700">${esc(label)}<input class="field mt-2" name="${name}" type="${type}" value="${esc(value)}" ${name === 'name' ? 'required' : ''} ${extra}></label>`;
+    }
+
+    function formCard(title, fields, button = 'Save', id = 'dataForm') {
+      return `<form id="${id}" class="rounded-2xl border border-zinc-200 bg-white p-5 md:p-6"><h2 class="mb-5 text-sm font-semibold">${esc(title)}</h2><div class="grid gap-4 sm:grid-cols-2">${fields}</div><button class="mt-5 rounded-xl bg-zinc-900 px-4 py-3 text-xs font-semibold text-white hover:bg-zinc-800">${esc(button)}</button></form>`;
+    }
+
+    function showModal(html) {
+      $('#modalCard').innerHTML = html;
+      $('#modal').classList.remove('hidden');
+      $('#modal').classList.add('flex');
+    }
+
+    function closeModal() {
+      $('#modal').classList.add('hidden');
+      $('#modal').classList.remove('flex');
+      $('#modalCard').innerHTML = '';
+    }
+
+    function formatDateTime(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return esc(value);
+      return new Intl.DateTimeFormat(currentLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+    }
+
+    function formatTime(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      return new Intl.DateTimeFormat(currentLocale(), { hour: '2-digit', minute: '2-digit' }).format(date);
+    }
+
+    function startOfDay(date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+
+    function startOfWeek(date) {
+      const result = startOfDay(date);
+      const offset = (result.getDay() + 6) % 7;
+      result.setDate(result.getDate() - offset);
+      return result;
+    }
+
+    function addDays(date, days) {
+      const result = new Date(date);
+      result.setDate(result.getDate() + days);
+      return result;
+    }
+
+    function sameDay(left, right) {
+      return left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth() && left.getDate() === right.getDate();
+    }
+
+    function dateInputValue(date) {
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    function timeInputValue(date) {
+      return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    async function init() {
+      try {
+        const config = await (await fetch('/api/public-config')).json();
+        if (!config.supabaseUrl || !config.supabasePublicKey) throw new Error('Account system is not configured.');
+        sb = window.supabase.createClient(config.supabaseUrl, config.supabasePublicKey);
+        const { data: { user: currentUser } } = await sb.auth.getUser();
+        if (!currentUser) { location.href = '/auth.html?mode=login'; return; }
+        user = currentUser;
+        $('#emailLabel').textContent = user.email;
+        const { data, error } = await sb.from('companies').select('*').limit(1).maybeSingle();
+        if (error) throw error;
+        company = data;
+        $('#loading').classList.add('hidden');
+        $('#app').classList.remove('hidden');
+        $('#nav').innerHTML = labels.map((label) => `<button class="navbtn w-full rounded-lg px-3 py-2.5 text-left text-[11px] text-zinc-600 ${label === active ? 'active' : ''}" data-label="${esc(label)}">${esc(label)}</button>`).join('');
+        $('#nav').onclick = (event) => {
+          const button = event.target.closest('[data-label]');
+          if (button) { active = button.dataset.label; render(); }
+        };
+        $('#logout').onclick = async () => { await sb.auth.signOut(); location.href = '/'; };
+        if (company) $('#companyLabel').textContent = company.name;
+        else active = 'Business info & FAQs';
+        updatePlanBadge();
+        render();
+      } catch (error) {
+        $('#loading').innerHTML = `Could not open the account: ${esc(error.message)} <a class="text-violet-600" href="/auth.html?mode=login">Log in</a>`;
+      }
+    }
+
+    function updatePlanBadge() {
+      $('#planBadge').textContent = company?.plan_code && company.plan_code !== 'pending' ? 'Plan active' : 'Payment not confirmed';
+      $('#planBadge').className = company?.plan_code && company.plan_code !== 'pending'
+        ? 'rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] font-semibold text-emerald-700'
+        : 'rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-semibold text-amber-700';
+    }
+
+    async function render() {
+      document.querySelectorAll('.navbtn').forEach((button) => button.classList.toggle('active', button.dataset.label === active));
+      $('#title').textContent = active;
+      $('#notice').classList.add('hidden');
+      $('#content').onclick = null;
+
+      if (active === 'Business info & FAQs' && !company) { renderCompanyOnboarding(); return; }
+      if (!company) { $('#content').innerHTML = empty('Start with your business details.'); return; }
+
+      try {
+        if (active === 'Overview') await renderOverview();
+        else if (active === 'Calendar') await renderCalendar();
+        else if (active === 'Calls') await renderCalls();
+        else if (active === 'Business info & FAQs') await renderBusinessInfo();
+        else if (active === 'Phone setup') renderPhoneSetup();
+        else if (active === 'Plan & billing') renderPlan();
+        else if (active === 'Settings') renderSettings();
+        else if (entityTables[active]) await renderEntity();
+      } catch (error) {
+        $('#content').innerHTML = empty(esc(error.message));
+      }
+    }
+
+    function renderCompanyOnboarding() {
+      $('#content').innerHTML = `<p class="mb-5 max-w-2xl text-xs leading-6 text-zinc-500">Start with your business details. You can add services, specialists, and approved answers next, and update them later.</p>${formCard('Business details', input('Business name', 'name') + input('Address', 'address') + input('Business phone number', 'phone', 'tel') + input('Opening hours (e.g. Mon–Fri, 8:00 am–6:00 pm)', 'hours') + input('Staff contact for unresolved requests', 'unresolved_contact', 'tel'))}`;
+      $('#dataForm').onsubmit = async (event) => {
+        event.preventDefault();
+        const fields = Object.fromEntries(new FormData(event.currentTarget));
+        try {
+          const { data, error } = await sb.from('companies').insert({
+            name: fields.name,
+            address: fields.address,
+            phone: fields.phone,
+            opening_hours: { display: fields.hours },
+            unresolved_contact: fields.unresolved_contact,
+            onboarding_complete: true,
+          }).select().single();
+          if (error) throw error;
+          company = data;
+          $('#companyLabel').textContent = data.name;
+          updatePlanBadge();
+          active = 'Overview';
+          await render();
+          notice('Business profile created. Next, add services, specialists, and approved answers.');
+        } catch (error) {
+          notice(error.message, true);
+        }
+      };
+    }
+
+    function businessForm(title = 'Business information', id = 'businessForm') {
+      return formCard(title,
+        input('Business name', 'name', 'text', company.name) +
+        input('Address', 'address', 'text', company.address) +
+        input('Phone number', 'phone', 'tel', company.phone) +
+        input('Opening hours', 'hours', 'text', company.opening_hours?.display || '') +
+        input('Contact for unresolved requests', 'unresolved_contact', 'tel', company.unresolved_contact),
+        'Save changes', id);
+    }
+
+    function attachBusinessForm(id = 'businessForm') {
+      const form = document.getElementById(id);
+      if (!form) return;
+      form.onsubmit = async (event) => {
+        event.preventDefault();
+        const fields = Object.fromEntries(new FormData(event.currentTarget));
+        const { error } = await sb.from('companies').update({
+          name: fields.name,
+          address: fields.address,
+          phone: fields.phone,
+          opening_hours: { ...company.opening_hours, display: fields.hours },
+          unresolved_contact: fields.unresolved_contact,
+          updated_at: new Date().toISOString(),
+        }).eq('id', company.id);
+        if (error) { notice(error.message, true); return; }
+        company = {
+          ...company,
+          name: fields.name,
+          address: fields.address,
+          phone: fields.phone,
+          opening_hours: { ...company.opening_hours, display: fields.hours },
+          unresolved_contact: fields.unresolved_contact,
+        };
+        $('#companyLabel').textContent = company.name;
+        notice('Changes saved.');
+      };
+    }
+
+    async function renderOverview() {
+      const [calls, appointments, specialists] = await Promise.all([
+        sb.from('business_calls').select('*', { count: 'exact' }).eq('company_id', company.id).order('created_at', { ascending: false }).limit(5),
+        sb.from('appointments').select('*', { count: 'exact' }).eq('company_id', company.id).gte('starts_at', new Date().toISOString()).order('starts_at', { ascending: true }).limit(5),
+        sb.from('specialists').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('active', true),
+      ]);
+
+      $('#content').innerHTML = `
+        <div class="grid gap-3 sm:grid-cols-3">
+          ${[['Calls', calls.count || 0], ['Upcoming appointments', appointments.count || 0], ['Active specialists', specialists.count || 0]].map(([label, value]) => `<div class="rounded-2xl border border-zinc-200 bg-white p-5"><div class="text-xs text-zinc-500">${esc(label)}</div><div class="mt-3 text-3xl font-semibold">${value}</div></div>`).join('')}
+        </div>
+        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+          <div>
+            <h2 class="mb-2 text-xs font-semibold text-zinc-700">Recent calls</h2>
+            ${calls.data?.length ? calls.data.map((row) => `<div class="mb-2 rounded-xl border border-zinc-200 bg-white p-4 text-xs"><b>${esc(row.customer_name || 'Customer')}</b><div class="mt-1 text-zinc-500">${esc(row.customer_phone)} · ${esc(row.summary)}</div></div>`).join('') : empty('No call records yet.')}
+          </div>
+          <div>
+            <h2 class="mb-2 text-xs font-semibold text-zinc-700">Upcoming appointments</h2>
+            ${appointments.data?.length ? appointments.data.map((row) => `<div class="mb-2 rounded-xl border border-zinc-200 bg-white p-4 text-xs"><b>${esc(row.customer_name)}</b><div class="mt-1 text-zinc-500">${esc(row.service_name)} · ${formatDateTime(row.starts_at)}</div></div>`).join('') : empty('No appointments scheduled yet.')}
+          </div>
+        </div>
+        <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900">Phone service is not configured yet. Call logs will appear when telephony is connected.</div>`;
+    }
+
+    async function renderCalls() {
+      $('#content').innerHTML = empty('Loading…');
+      const { data, error } = await sb.from('business_calls').select('*').eq('company_id', company.id).order('created_at', { ascending: false }).limit(100);
+      if (error) { $('#content').innerHTML = empty(esc(error.message)); return; }
+      if (!data.length) { $('#content').innerHTML = empty('No call records yet.'); return; }
+      $('#content').innerHTML = `<div class="overflow-x-auto rounded-2xl border border-zinc-200 bg-white"><table class="w-full text-left text-xs"><thead class="bg-zinc-50 text-[10px] uppercase tracking-wider text-zinc-500"><tr><th class="p-4">Customer</th><th class="p-4">Phone</th><th class="p-4">Summary</th><th class="p-4">Date</th></tr></thead><tbody>${data.map((row) => `<tr class="border-t border-zinc-100"><td class="p-4 font-medium">${esc(row.customer_name || 'Customer')}</td><td class="p-4 text-zinc-500">${esc(row.customer_phone || '—')}</td><td class="max-w-md whitespace-normal p-4 text-zinc-500">${esc(row.summary || '—')}</td><td class="p-4 text-zinc-500">${formatDateTime(row.created_at)}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+
+    function calendarRange() {
+      const cursor = calendarState.cursor;
+      if (calendarState.view === 'week') {
+        const start = startOfWeek(cursor);
+        return { start, end: addDays(start, 7) };
+      }
+      const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+      const last = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+      const start = startOfWeek(first);
+      const end = addDays(startOfWeek(last), 7);
+      return { start, end };
+    }
+
+    function appointmentsOnDay(day) {
+      return dataState.appointments
+        .filter((appointment) => sameDay(new Date(appointment.starts_at), day))
+        .sort((left, right) => new Date(left.starts_at).getTime() - new Date(right.starts_at).getTime());
+    }
+
+    function appointmentChip(appointment) {
+      const color = appointment.status === 'cancelled'
+        ? 'border-rose-200 bg-rose-50 text-rose-700 line-through'
+        : appointment.status === 'completed'
+          ? 'border-zinc-200 bg-zinc-100 text-zinc-600'
+          : 'border-violet-200 bg-violet-50 text-violet-800';
+      return `<button type="button" data-appt-id="${esc(appointment.id)}" class="appointment-chip block w-full truncate rounded-md border px-1.5 py-1 text-left text-[10px] ${color}" title="${esc(appointment.customer_name)} · ${esc(appointment.service_name)}">
+        <span class="font-semibold">${formatTime(appointment.starts_at)}</span> ${esc(appointment.customer_name)}
+      </button>`;
+    }
+
+    function monthViewHtml(range) {
+      const days = [];
+      for (let day = range.start; day < range.end; day = addDays(day, 1)) days.push(day);
+      const today = new Date();
+      return `<div class="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+        <div class="grid grid-cols-7 border-b border-zinc-200 bg-zinc-50">${WEEKDAYS.map((day) => `<div class="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-500">${day}</div>`).join('')}</div>
+        <div class="grid grid-cols-7">${days.map((day) => {
+          const appointments = appointmentsOnDay(day);
+          const inMonth = day.getMonth() === calendarState.cursor.getMonth() && day.getFullYear() === calendarState.cursor.getFullYear();
+          const isToday = sameDay(day, today);
+          return `<div data-day="${dateInputValue(day)}" class="min-h-[112px] cursor-pointer border-b border-r border-zinc-100 p-1.5 transition-colors hover:bg-violet-50/40 ${inMonth ? 'bg-white' : 'bg-zinc-50/70'}">
+            <div class="flex items-center justify-between">
+              <span class="grid h-6 w-6 place-items-center rounded-full text-[11px] ${isToday ? 'bg-violet-600 font-semibold text-white' : inMonth ? 'text-zinc-700' : 'text-zinc-400'}">${day.getDate()}</span>
+              ${appointments.length > 3 ? `<button type="button" data-more-day="${dateInputValue(day)}" class="text-[9px] font-semibold text-violet-600">+${appointments.length - 3}</button>` : ''}
+            </div>
+            <div class="mt-1 space-y-1">${appointments.slice(0, 3).map(appointmentChip).join('')}</div>
+          </div>`;
+        }).join('')}</div>
+      </div>`;
+    }
+
+    function weekViewHtml(range) {
+      const days = [];
+      for (let index = 0; index < 7; index += 1) days.push(addDays(range.start, index));
+      const today = new Date();
+      const totalHeight = (HOUR_END - HOUR_START) * SLOT_HEIGHT;
+      const hours = [];
+      for (let hour = HOUR_START; hour < HOUR_END; hour += 1) hours.push(hour);
+
+      return `<div class="mt-4 overflow-x-auto rounded-2xl border border-zinc-200 bg-white calendar-scroll">
+        <div class="min-w-[760px]">
+          <div class="grid border-b border-zinc-200 bg-zinc-50" style="grid-template-columns:58px repeat(7,minmax(0,1fr))">
+            <div></div>
+            ${days.map((day, index) => `<div class="border-l border-zinc-200 px-2 py-2 text-center"><div class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">${WEEKDAYS[index]}</div><div class="mt-1 text-xs font-semibold ${sameDay(day, today) ? 'text-violet-700' : 'text-zinc-700'}">${day.getDate()}</div></div>`).join('')}
+          </div>
+          <div class="grid" style="grid-template-columns:58px repeat(7,minmax(0,1fr))">
+            <div class="relative" style="height:${totalHeight}px">
+              ${hours.map((hour) => `<div class="absolute right-2 text-[10px] text-zinc-400" style="top:${(hour - HOUR_START) * SLOT_HEIGHT - 5}px">${pad(hour)}:00</div>`).join('')}
+            </div>
+            ${days.map((day) => {
+              const appointments = appointmentsOnDay(day);
+              return `<div data-week-day="${dateInputValue(day)}" class="relative border-l border-zinc-200" style="height:${totalHeight}px">
+                ${hours.map((hour) => `<div class="pointer-events-none absolute inset-x-0 border-t border-zinc-100" style="top:${(hour - HOUR_START) * SLOT_HEIGHT}px"></div>`).join('')}
+                ${appointments.map((appointment) => {
+                  const start = new Date(appointment.starts_at);
+                  const end = new Date(appointment.ends_at);
+                  const startMinutes = start.getHours() * 60 + start.getMinutes();
+                  const endMinutes = Math.max(startMinutes + 15, end.getHours() * 60 + end.getMinutes());
+                  const from = Math.max(startMinutes, HOUR_START * 60);
+                  const to = Math.min(endMinutes, HOUR_END * 60);
+                  if (to <= from) return '';
+                  const top = ((from - HOUR_START * 60) / 60) * SLOT_HEIGHT;
+                  const height = Math.max(24, ((to - from) / 60) * SLOT_HEIGHT - 3);
+                  const color = appointment.status === 'cancelled'
+                    ? 'border-rose-300 bg-rose-100 text-rose-800'
+                    : appointment.status === 'completed'
+                      ? 'border-zinc-300 bg-zinc-200 text-zinc-700'
+                      : 'border-violet-300 bg-violet-100 text-violet-900';
+                  return `<button type="button" data-appt-id="${esc(appointment.id)}" class="appointment-chip absolute left-1 right-1 overflow-hidden rounded-lg border px-1.5 py-1 text-left text-[10px] ${color}" style="top:${top}px;height:${height}px" title="${esc(appointment.customer_name)} · ${esc(appointment.service_name)}">
+                    <div class="truncate font-semibold">${formatTime(appointment.starts_at)} ${esc(appointment.customer_name)}</div>
+                    <div class="truncate opacity-70">${esc(appointment.service_name)}</div>
+                  </button>`;
+                }).join('')}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function calendarHeaderHtml(range) {
+      const cursor = calendarState.cursor;
+      const weekEnd = addDays(range.start, 6);
+      const title = calendarState.view === 'month'
+        ? `<span>${MONTHS[cursor.getMonth()]}</span> <span>${cursor.getFullYear()}</span>`
+        : `<span>${MONTHS[range.start.getMonth()]}</span> <span>${range.start.getDate()}</span> <span>–</span> <span>${MONTHS[weekEnd.getMonth()]}</span> <span>${weekEnd.getDate()}</span> <span>${weekEnd.getFullYear()}</span>`;
+      const viewButton = (view, label) => `<button type="button" data-cal-view="${view}" class="rounded-lg px-3 py-1.5 text-[10px] font-semibold ${calendarState.view === view ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-800'}">${label}</button>`;
+      return `<div class="rounded-2xl border border-zinc-200 bg-white p-4 md:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <button type="button" data-cal-prev class="grid h-8 w-8 place-items-center rounded-lg border border-zinc-200 text-sm text-zinc-600 hover:bg-zinc-50" aria-label="Previous">←</button>
+            <div class="min-w-[168px] text-center text-sm font-semibold">${title}</div>
+            <button type="button" data-cal-next class="grid h-8 w-8 place-items-center rounded-lg border border-zinc-200 text-sm text-zinc-600 hover:bg-zinc-50" aria-label="Next">→</button>
+            <button type="button" data-cal-today class="rounded-lg border border-zinc-200 px-3 py-1.5 text-[10px] font-semibold text-zinc-600 hover:bg-zinc-50">Today</button>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex rounded-xl border border-zinc-200 p-0.5">${viewButton('month', 'Month')}${viewButton('week', 'Week')}</div>
+            <button type="button" data-new-appt class="rounded-xl bg-violet-600 px-3 py-2 text-[10px] font-semibold text-white hover:bg-violet-700">+ New appointment</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    async function renderCalendar() {
+      const range = calendarRange();
+      $('#content').innerHTML = empty('Loading…');
+      try {
+        const [appointments, services, specialists] = await Promise.all([
+          sb.from('appointments').select('*').eq('company_id', company.id).gte('starts_at', range.start.toISOString()).lt('starts_at', range.end.toISOString()).order('starts_at', { ascending: true }).limit(500),
+          sb.from('business_services').select('id,name,duration_minutes,price_eur').eq('company_id', company.id).eq('active', true).order('name', { ascending: true }).limit(200),
+          sb.from('specialists').select('id,name').eq('company_id', company.id).eq('active', true).order('name', { ascending: true }).limit(200),
+        ]);
+        if (appointments.error) throw appointments.error;
+        if (services.error) throw services.error;
+        if (specialists.error) throw specialists.error;
+        dataState.appointments = appointments.data || [];
+        dataState.services = services.data || [];
+        dataState.specialists = specialists.data || [];
+        $('#content').innerHTML = calendarHeaderHtml(range) + (calendarState.view === 'month' ? monthViewHtml(range) : weekViewHtml(range));
+        wireCalendar();
+      } catch (error) {
+        $('#content').innerHTML = empty(esc(error.message));
+      }
+    }
+
+    function wireCalendar() {
+      const content = $('#content');
+      content.onclick = (event) => {
+        const appointmentButton = event.target.closest('[data-appt-id]');
+        if (appointmentButton) {
+          const appointment = dataState.appointments.find((entry) => entry.id === appointmentButton.dataset.apptId);
+          if (appointment) openAppointment(appointment);
+          return;
+        }
+        if (event.target.closest('[data-cal-prev]')) { shiftCalendar(-1); return; }
+        if (event.target.closest('[data-cal-next]')) { shiftCalendar(1); return; }
+        if (event.target.closest('[data-cal-today]')) { calendarState.cursor = new Date(); render(); return; }
+        const viewButton = event.target.closest('[data-cal-view]');
+        if (viewButton) { calendarState.view = viewButton.dataset.calView; render(); return; }
+        if (event.target.closest('[data-new-appt]')) { openAppointment(null, new Date(), '09:00'); return; }
+        const moreButton = event.target.closest('[data-more-day]');
+        if (moreButton) {
+          calendarState.view = 'week';
+          calendarState.cursor = new Date(`${moreButton.dataset.moreDay}T12:00:00`);
+          render();
+          return;
+        }
+        const dayCell = event.target.closest('[data-day]');
+        if (dayCell) { openAppointment(null, new Date(`${dayCell.dataset.day}T12:00:00`), '09:00'); return; }
+        const weekDay = event.target.closest('[data-week-day]');
+        if (weekDay) {
+          const rect = weekDay.getBoundingClientRect();
+          const offset = Math.max(0, Math.min(event.clientY - rect.top, rect.height - 1));
+          let minutes = HOUR_START * 60 + Math.round((offset / SLOT_HEIGHT) * 4) * 15;
+          minutes = Math.max(HOUR_START * 60, Math.min(HOUR_END * 60 - 15, minutes));
+          const hour = Math.floor(minutes / 60);
+          const minute = minutes % 60;
+          openAppointment(null, new Date(`${weekDay.dataset.weekDay}T00:00:00`), `${pad(hour)}:${pad(minute)}`);
+        }
+      };
+    }
+
+    function shiftCalendar(direction) {
+      if (calendarState.view === 'month') {
+        calendarState.cursor = new Date(calendarState.cursor.getFullYear(), calendarState.cursor.getMonth() + direction, 1);
+      } else {
+        calendarState.cursor = addDays(calendarState.cursor, direction * 7);
+      }
+      render();
+    }
+
+    function openAppointment(appointment = null, date = new Date(), time = '09:00') {
+      const start = appointment ? new Date(appointment.starts_at) : date;
+      const end = appointment ? new Date(appointment.ends_at) : null;
+      const calculatedDuration = end ? Math.round((end.getTime() - start.getTime()) / 60000) : NaN;
+      const duration = Number.isFinite(calculatedDuration) && calculatedDuration >= 5 ? calculatedDuration : 30;
+      const selectedSpecialist = appointment?.specialist_id || '';
+      const serviceName = appointment?.service_name || '';
+      const status = appointment?.status || 'confirmed';
+      const specialistOptions = `<option value="">—</option>` + dataState.specialists.map((specialist) => `<option value="${esc(specialist.id)}" ${specialist.id === selectedSpecialist ? 'selected' : ''}>${esc(specialist.name)}</option>`).join('');
+      const serviceOptions = dataState.services.map((service) => `<option value="${esc(service.name)}">${esc(service.name)} · ${esc(service.duration_minutes)} min.</option>`).join('');
+
+      showModal(`<form id="apptForm">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 class="text-base font-semibold">${appointment ? 'Edit appointment' : 'New appointment'}</h2>
+            <p class="mt-1 text-[11px] text-zinc-500">${appointment ? 'Update the visit details or cancel it.' : 'Book a visit directly from the business calendar.'}</p>
+          </div>
+          <button type="button" id="closeAppt" class="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs text-zinc-500 hover:bg-zinc-50" aria-label="Close">✕</button>
+        </div>
+        <div class="mt-5 grid gap-4 sm:grid-cols-2">
+          <label class="block text-xs font-medium text-zinc-700">Customer name<input class="field mt-2" name="customer_name" required value="${esc(appointment?.customer_name || '')}"></label>
+          <label class="block text-xs font-medium text-zinc-700">Customer phone<input class="field mt-2" name="customer_phone" type="tel" required value="${esc(appointment?.customer_phone || '')}"></label>
+          <label class="block text-xs font-medium text-zinc-700">Service<input class="field mt-2" name="service_name" list="serviceOptions" required value="${esc(serviceName)}" placeholder="Select or type a service"><datalist id="serviceOptions">${serviceOptions}</datalist></label>
+          <label class="block text-xs font-medium text-zinc-700">Specialist<select class="field mt-2" name="specialist_id">${specialistOptions}</select></label>
+          <label class="block text-xs font-medium text-zinc-700">Date<input class="field mt-2" name="date" type="date" required value="${dateInputValue(start)}"></label>
+          <label class="block text-xs font-medium text-zinc-700">Time<input class="field mt-2" name="time" type="time" required value="${appointment ? timeInputValue(start) : time}"></label>
+          <label class="block text-xs font-medium text-zinc-700">Duration (min.)<input class="field mt-2" name="duration" type="number" min="5" step="5" required value="${duration}"></label>
+          <label class="block text-xs font-medium text-zinc-700">Status<select class="field mt-2" name="status">${Object.entries(STATUS_LABELS).map(([value, label]) => `<option value="${value}" ${status === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
+        </div>
+        <div id="apptError" class="mt-4 hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700"></div>
+        <div class="mt-6 flex flex-wrap items-center justify-between gap-2">
+          ${appointment ? '<button type="button" id="deleteAppt" class="rounded-xl border border-rose-200 px-3 py-2.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50">Delete</button>' : '<span></span>'}
+          <div class="flex gap-2">
+            <button type="button" id="cancelAppt" class="rounded-xl border border-zinc-200 px-3 py-2.5 text-[11px] font-semibold text-zinc-600 hover:bg-zinc-50">Cancel</button>
+            <button type="submit" class="rounded-xl bg-zinc-900 px-4 py-2.5 text-[11px] font-semibold text-white hover:bg-zinc-800">${appointment ? 'Save changes' : 'Save appointment'}</button>
+          </div>
+        </div>
+      </form>`);
+
+      const form = $('#apptForm');
+      const serviceField = form.elements.service_name;
+      serviceField.addEventListener('change', () => {
+        const service = dataState.services.find((entry) => entry.name === serviceField.value);
+        if (service) form.elements.duration.value = service.duration_minutes;
+      });
+      $('#closeAppt').onclick = closeModal;
+      $('#cancelAppt').onclick = closeModal;
+      if (appointment) {
+        $('#deleteAppt').onclick = async () => {
+          if (!confirm('Delete this appointment?')) return;
+          const { error } = await sb.from('appointments').delete().eq('id', appointment.id);
+          if (error) { showAppointmentError(error.message); return; }
+          closeModal();
+          await render();
+          notice('Appointment deleted.');
+        };
+      }
+
+      form.onsubmit = async (event) => {
+        event.preventDefault();
+        const fields = Object.fromEntries(new FormData(form));
+        const startsAt = new Date(`${fields.date}T${fields.time}`);
+        if (Number.isNaN(startsAt.getTime())) { showAppointmentError('Enter a valid date and time.'); return; }
+        const minutes = Math.max(5, Math.round(Number(fields.duration) || 30));
+        const endsAt = new Date(startsAt.getTime() + minutes * 60000);
+        if (Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) { showAppointmentError('The end time must be after the start time.'); return; }
+        const row = {
+          company_id: company.id,
+          customer_name: fields.customer_name.trim(),
+          customer_phone: fields.customer_phone.trim(),
+          service_name: fields.service_name.trim(),
+          specialist_id: fields.specialist_id || null,
+          starts_at: startsAt.toISOString(),
+          ends_at: endsAt.toISOString(),
+          status: fields.status || 'confirmed',
+        };
+        const query = appointment
+          ? sb.from('appointments').update(row).eq('id', appointment.id)
+          : sb.from('appointments').insert(row);
+        const { error } = await query;
+        if (error) { showAppointmentError(error.message); return; }
+        closeModal();
+        await render();
+        notice(appointment ? 'Appointment updated.' : 'Appointment saved.');
+      };
+    }
+
+    function showAppointmentError(message) {
+      const box = $('#apptError');
+      if (!box) return;
+      box.textContent = message;
+      box.classList.remove('hidden');
+    }
+
+    async function renderBusinessInfo() {
+      const { data: faqs, error } = await sb.from('business_faq').select('*').eq('company_id', company.id).order('created_at', { ascending: false }).limit(100);
+      $('#content').innerHTML = `${businessForm()}${error ? empty(esc(error.message)) : `<div class="mt-4 rounded-2xl border border-zinc-200 bg-white p-5 md:p-6"><h2 class="text-sm font-semibold">Approved answers</h2><p class="mt-2 text-[11px] leading-5 text-zinc-500">The AI receptionist uses these answers when it talks to customers.</p><div class="mt-4 space-y-2">${faqs?.length ? faqs.map((faq) => `<div class="rounded-xl border border-zinc-200 p-4 text-xs"><div class="font-semibold">${esc(faq.question)}</div><div class="mt-1 leading-5 text-zinc-500">${esc(faq.answer)}</div></div>`).join('') : `<div class="rounded-xl border border-dashed border-zinc-300 p-4 text-xs text-zinc-500">No approved answers yet.</div>`}</div></div>`}${formCard('Add an approved answer', input('Common question', 'question') + input('Approved answer', 'answer'), 'Add answer', 'faqForm')}`;
+      attachBusinessForm();
+      $('#faqForm').onsubmit = async (event) => {
+        event.preventDefault();
+        const fields = Object.fromEntries(new FormData(event.currentTarget));
+        const { error: insertError } = await sb.from('business_faq').insert({ company_id: company.id, question: fields.question, answer: fields.answer });
+        if (insertError) { notice(insertError.message, true); return; }
+        await render();
+        notice('Approved answer added.');
+      };
+    }
+
+    async function renderEntity() {
+      const table = entityTables[active];
+      $('#content').innerHTML = empty('Loading…');
+      const { data, error } = await sb.from(table).select('*').eq('company_id', company.id).order('created_at', { ascending: false }).limit(100);
+      const fields = active === 'Services'
+        ? input('Service name', 'name') + input('Price (€)', 'price', 'number') + input('Duration (min.)', 'duration', 'number')
+        : active === 'Specialists'
+          ? input('Specialist name', 'name') + input('Qualifications', 'qualifications') + input('Working schedule', 'schedule') + input('Unavailable periods', 'unavailable_periods')
+          : input('Product name', 'product_name') + input('SKU', 'sku') + input('Quantity', 'quantity', 'number');
+      const rows = error ? empty(esc(error.message)) : data.length
+        ? `<div class="mt-4 space-y-2">${data.map((row) => `<div class="flex items-start justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-4 text-xs"><div><div class="font-medium">${esc(row.name || row.product_name || row.question)}</div><div class="mt-1 text-zinc-500">${row.price_eur != null ? esc(row.price_eur) + ' €' : ''}${row.duration_minutes ? ' · ' + esc(row.duration_minutes) + ' min.' : ''}${row.quantity != null ? ' · Stock: ' + esc(row.quantity) : ''}${row.qualifications ? ' · ' + esc(row.qualifications) : ''}</div></div><button type="button" data-delete-id="${esc(row.id)}" data-delete-table="${table}" class="shrink-0 text-[10px] font-semibold text-rose-500 hover:text-rose-700">Delete</button></div>`).join('')}</div>`
+        : empty(`No records yet in „${esc(active)}“.`);
+      $('#content').innerHTML = formCard(`Add: ${active}`, fields, 'Add record') + rows;
+
+      $('#content').querySelectorAll('[data-delete-id]').forEach((button) => {
+        button.onclick = async () => {
+          if (!confirm('Delete this record?')) return;
+          const { error: deleteError } = await sb.from(button.dataset.deleteTable).delete().eq('id', button.dataset.deleteId);
+          if (deleteError) { notice(deleteError.message, true); return; }
+          await render();
+        };
+      });
+
+      $('#dataForm').onsubmit = async (event) => {
+        event.preventDefault();
+        const fieldsValue = Object.fromEntries(new FormData(event.currentTarget));
+        const row = { company_id: company.id };
+        if (active === 'Services') Object.assign(row, { name: fieldsValue.name, price_eur: fieldsValue.price ? Number(fieldsValue.price) : null, duration_minutes: Number(fieldsValue.duration || 30) });
+        if (active === 'Specialists') Object.assign(row, { name: fieldsValue.name, qualifications: fieldsValue.qualifications, working_schedule: { display: fieldsValue.schedule }, unavailable_periods: { display: fieldsValue.unavailable_periods } });
+        if (active === 'Inventory') Object.assign(row, { product_name: fieldsValue.product_name, sku: fieldsValue.sku, quantity: Number(fieldsValue.quantity || 0) });
+        const { error: insertError } = await sb.from(table).insert(row);
+        if (insertError) { notice(insertError.message, true); return; }
+        await render();
+      };
+    }
+
+    function renderPhoneSetup() {
+      $('#content').innerHTML = `<div class="rounded-2xl border border-zinc-200 bg-white p-6"><h2 class="text-sm font-semibold">Phone setup</h2><p class="mt-3 text-xs leading-6 text-zinc-500">No telephony provider is connected to this account. Call handling is inactive.</p><span class="mt-4 inline-flex rounded-full bg-zinc-100 px-3 py-1.5 text-[10px] font-semibold text-zinc-600">Not connected</span></div>`;
+    }
+
+    function renderPlan() {
+      $('#content').innerHTML = `<div class="rounded-2xl border border-zinc-200 bg-white p-6"><h2 class="text-sm font-semibold">${company.plan_code === 'pending' ? 'Plan activation required' : 'Active plan'}</h2><p class="mt-3 text-xs leading-6 text-zinc-500">Selected plan: ${esc(new URLSearchParams(location.search).get('plan') || company.plan_code)}. Payment provider is not configured; paid features are inactive.</p><p class="mt-2 text-xs text-zinc-500">The platform administrator sets the inventory plan price. If no price is configured, contact us for pricing.</p><a href="/#pricing" class="mt-4 inline-block rounded-xl bg-zinc-900 px-4 py-3 text-xs font-semibold text-white">View plans</a></div>`;
+    }
+
+    function renderSettings() {
+      $('#content').innerHTML = `<div class="rounded-2xl border border-zinc-200 bg-white p-5 md:p-6"><h2 class="text-sm font-semibold">Account</h2><p class="mt-2 text-xs text-zinc-500">Signed in as <b>${esc(user.email)}</b>.</p></div><div class="mt-4">${businessForm('Business information', 'businessForm')}</div>`;
+      attachBusinessForm();
+    }
+
+    $('#modal').addEventListener('click', (event) => {
+      if (event.target === $('#modal')) closeModal();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !$('#modal').classList.contains('hidden')) closeModal();
+    });
+
+    init();
+  </script>
+</body>
+</html>

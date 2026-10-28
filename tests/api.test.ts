@@ -87,6 +87,15 @@ describe("HTTP API", () => {
     expect(await response.text()).toContain("AIcall");
   });
 
+  it("serves the owner workspace with the business calendar", async () => {
+    const response = await fetch(`${baseUrl}/app.html`);
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain("renderCalendar");
+    expect(html).toContain("New appointment");
+    expect(html).toContain("appointments");
+  });
+
   it("returns useful errors", async () => {
     const missingTenant = await fetch(`${baseUrl}/api/calls`, {
       method: "POST",
