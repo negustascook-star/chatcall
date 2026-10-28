@@ -53,6 +53,9 @@ export class KnowledgeService {
 export function servicePriceLabel(service: Service): string {
   const unit = service.priceUnit ? ` ${service.priceUnit}` : "";
   if (service.priceFrom !== undefined && service.priceTo !== undefined) {
+    if (service.priceFrom === service.priceTo) {
+      return `${formatMoney(service.priceFrom)}${unit}`;
+    }
     return `${formatMoney(service.priceFrom)}–${formatMoney(service.priceTo)}${unit}`;
   }
   if (service.priceFrom !== undefined) {

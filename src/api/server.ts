@@ -6,6 +6,8 @@ import { TenantRepository } from "../tenants/tenantRepository.js";
 export interface ApiDependencies {
   dataDir: string;
   agent: CallAgent;
+  tenants?: TenantRepository;
+  catalogSource?: "json" | "supabase";
 }
 
 class HttpError extends Error {
@@ -19,12 +21,12 @@ class HttpError extends Error {
 }
 
 export function createApiServer(deps: ApiDependencies): Server {
-  const tenants = new TenantRepository(deps.dataDir);
+  const tenants = deps.tenants ?? new TenantRepository(deps.dataDir);
   const requests = new RequestService(deps.dataDir);
 
   return createServer(async (req, res) => {
     try {
-      await route(req, res, deps.agent, tenants, requests);
+      await route(req, res, deps.agent, tenants, requests, deps.catalogSource ?? "json");
     } catch (error) {
       if (res.headersSent) {
         res.end();
@@ -56,6 +58,7 @@ async function route(
   agent: CallAgent,
   tenants: TenantRepository,
   requests: RequestService,
+  catalogSource: "json" | "supabase",
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -69,6 +72,7 @@ async function route(
     sendJson(res, 200, {
       ok: true,
       service: "chatcall",
+      catalogSource,
       time: new Date().toISOString(),
     });
     return;

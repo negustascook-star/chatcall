@@ -1,6 +1,16 @@
 import path from "node:path";
+import { existsSync } from "node:fs";
 import { CallAgent } from "../agent/callAgent.js";
+import { SupabaseCatalog, readSupabaseConfig } from "../supabase/catalog.js";
+import { TenantRepository } from "../tenants/tenantRepository.js";
 import { createApiServer } from "./server.js";
+
+if (existsSync(".env")) {
+  if (typeof process.loadEnvFile !== "function") {
+    throw new Error(".env įkėlimui reikia Node.js 20.12 arba naujesnio.");
+  }
+  process.loadEnvFile();
+}
 
 const dataDir = path.resolve(process.env.DATA_DIR ?? path.join(process.cwd(), "data"));
 const port = Number(process.env.PORT ?? 3000);
@@ -10,12 +20,19 @@ if (!Number.isInteger(port) || port <= 0 || port > 65535) {
   process.exit(1);
 }
 
-const agent = new CallAgent({ dataDir });
-const server = createApiServer({ dataDir, agent });
+const supabase = readSupabaseConfig();
+const catalogSource = supabase ? "supabase" : "json";
+const tenants = new TenantRepository(dataDir, supabase ? {
+  catalog: new SupabaseCatalog(supabase),
+  catalogTenantId: supabase.tenantId,
+} : {});
+const agent = new CallAgent({ dataDir, tenants });
+const server = createApiServer({ dataDir, agent, tenants, catalogSource });
 
 server.listen(port, () => {
   console.log(`Chatcall API veikia: http://localhost:${port}`);
   console.log(`Duomenų katalogas: ${dataDir}`);
+  console.log(`Paslaugų ir sandėlio šaltinis: ${catalogSource}`);
   console.log("Sveikatos patikra: GET /health");
 });
 

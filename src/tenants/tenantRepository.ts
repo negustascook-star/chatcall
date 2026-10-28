@@ -2,12 +2,21 @@ import path from "node:path";
 import type { FaqEntry, InventoryItem, Service, Tenant, TenantContext } from "../domain/types.js";
 import { listDirectories, readJsonIfExists } from "../lib/jsonStore.js";
 import { normalizePhone } from "../lib/text.js";
+import type { TenantCatalogSource } from "../supabase/catalog.js";
+
+export interface TenantRepositoryOptions {
+  catalog?: TenantCatalogSource;
+  catalogTenantId?: string;
+}
 
 export class TenantRepository {
   private readonly tenantsDir: string;
 
-  constructor(dataDir: string) {
+  constructor(dataDir: string, private readonly options: TenantRepositoryOptions = {}) {
     this.tenantsDir = path.join(path.resolve(dataDir), "tenants");
+    if (options.catalog && !options.catalogTenantId) {
+      throw new Error("Supabase katalogui nurodykite catalogTenantId.");
+    }
   }
 
   async list(): Promise<TenantContext[]> {
@@ -26,18 +35,27 @@ export class TenantRepository {
       throw new Error(`Tenant "${id}" has mismatched id "${tenant.id}" in tenant.json`);
     }
 
-    const [services, inventory, faq] = await Promise.all([
-      readJsonIfExists<Service[]>(path.join(directory, "services.json")),
-      readJsonIfExists<InventoryItem[]>(path.join(directory, "inventory.json")),
+    const [catalog, faq] = await Promise.all([
+      this.options.catalog && id === this.options.catalogTenantId
+        ? this.options.catalog.load()
+        : this.readFileCatalog(directory),
       readJsonIfExists<FaqEntry[]>(path.join(directory, "faq.json")),
     ]);
 
     return {
       tenant,
-      services: services ?? [],
-      inventory: inventory ?? [],
+      services: catalog.services,
+      inventory: catalog.inventory,
       faq: faq ?? [],
     };
+  }
+
+  private async readFileCatalog(directory: string): Promise<Pick<TenantContext, "services" | "inventory">> {
+    const [services, inventory] = await Promise.all([
+      readJsonIfExists<Service[]>(path.join(directory, "services.json")),
+      readJsonIfExists<InventoryItem[]>(path.join(directory, "inventory.json")),
+    ]);
+    return { services: services ?? [], inventory: inventory ?? [] };
   }
 
   async getOrThrow(id: string): Promise<TenantContext> {

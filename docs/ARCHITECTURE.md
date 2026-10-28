@@ -32,6 +32,7 @@ flowchart LR
     Agent --> Requests[RequestService]
     Agent --> Calls[CallStore]
     Tenants --> Files[(data/tenants/...)]
+    Tenants -.->|CATALOG_SOURCE=supabase| Supa[(Supabase<br/>services / inventory)]
     Requests --> Files
     Calls --> Files
     Brain -.->|vėliau| LLM[OpenAI adapteris]
@@ -47,6 +48,7 @@ src/
 ├── domain/       # tipai, jokios I/O logikos
 ├── lib/          # tekstas, datos, atominių failų saugykla
 ├── tenants/      # tenant konfigūracijos įkėlimas ir paieška pagal telefoną
+├── supabase/     # paslaugų ir sandėlio katalogo adapteris
 ├── inventory/    # sandėlio filtravimas ir alternatyvos
 ├── knowledge/    # DUK ir paslaugų paieška
 ├── requests/     # kliento poreikių išsaugojimas (JSON/MD/CSV)
@@ -97,6 +99,17 @@ Telefonai lyginami per `normalizePhone()`: `+370 600 00000`, `00370...`, `8 600.
 - `tenant.json → id` turi sutapti su katalogo pavadinimu; tai tikrinama įkeliant.
 
 **Produkcijai būtina:** tenant’ą imti iš autentifikuoto telefono numerio arba API rakto, o ne iš kliento siunčiamo `tenantId`. Dabartinis API yra atviras ir skirtas tik demo/testavimui.
+
+### Supabase katalogas
+
+Įjungus `CATALOG_SOURCE=supabase`, paslaugos ir sandėlis imami ne iš `services.json` / `inventory.json`, o iš Supabase `services` ir `inventory` lentelių:
+
+- `SUPABASE_TENANT_ID` nurodo, kuriam vienam tenant’ui taikomas SQL katalogas. Kiti tenant’ai toliau naudoja savo JSON failus.
+- Duomenys įkeliami kiekvieno naujo skambučio pradžioje, todėl Supabase pakeitimai matomi be serverio perkrovimo.
+- Naudojamas tik serverio `sb_secret_...` arba legacy `service_role` raktas. `publishable` / `anon` raktas atmetamas, nes RLS užblokuoja tiesioginę prieigą.
+- Supabase klaida ar netinkamas atsakymas grąžinamas kaip klaida; automatiškai neperjungiama į JSON, kad nebūtų rodomos pasenusios kainos.
+- DUK, įmonės kontaktai, poreikiai ir transkriptai lieka failų saugykloje. `time_slots`, `mechanics` ir `bookings` lentelės paruoštos kitam etapui, bet pokalbis jų dar nenaudoja.
+- SQL schema ir seed duomenys: `supabase/`. Konfigūracija ir patikra: [SUPABASE.md](SUPABASE.md).
 
 ## 5. Skambučio gyvavimo ciklas
 
@@ -318,6 +331,7 @@ data/tenants/<tenant-id>/
         └── call_<uuid>.md
 ```
 
+- `services.json` / `inventory.json` naudojami JSON režimu; su `CATALOG_SOURCE=supabase` juos pakeičia Supabase katalogas.
 - Data ir laikas imami tenant’o `timezone` (numatytai `Europe/Vilnius`).
 - JSON rašomas atominiu būdu (laikinas failas + rename), kad nebūtų pusiau įrašyto failo.
 - `REQ-...md` — vieno poreikio kortelė žmogui.
@@ -483,7 +497,7 @@ Adapteris turi:
 | Dabartinis sprendimas | Produkcinis variantas |
 | --- | --- |
 | `tenant.json` failai | DB + admin UI; `TenantRepository` interface |
-| `inventory.json` | POS / ERP / sandėlio API; periodinis cache |
+| `inventory.json` | Supabase katalogas (jau yra) → POS / ERP / sandėlio API |
 | `RequestService` į failus | DB + CRM webhook + eilė |
 | `CallStore` į failus | Object storage + DB indeksas |
 | `CallAgent.active` `Map` | Redis / DB sesijos, TTL, keli procesai |
@@ -502,9 +516,10 @@ Adapteris turi:
 
 ## 15. Tolimesni žingsniai
 
-1. Pridėti `OpenAiBrain` ir `BRAIN=rule|openai` konfigūraciją.
-2. Padaryti `TenantRepository` / `RequestService` / `CallStore` sąsajas ir DB adapterius.
-3. Pridėti `SessionStore` ir telefono `CallSid` susiejimą.
-4. Įdiegti Twilio webhook + Media Streams + STT/TTS.
-5. Pridėti autentifikaciją, rate limiting ir observability.
-6. Praplėsti testus: LLM contract, telephony adapter, ilgi pokalbiai, nutrūkę skambučiai.
+1. Supabase `time_slots` / `bookings` prijungimas prie rezervacijos srauto.
+2. Pridėti `OpenAiBrain` ir `BRAIN=rule|openai` konfigūraciją.
+3. Padaryti `TenantRepository` / `RequestService` / `CallStore` sąsajas ir DB adapterius.
+4. Pridėti `SessionStore` ir telefono `CallSid` susiejimą.
+5. Įdiegti Twilio webhook + Media Streams + STT/TTS.
+6. Pridėti autentifikaciją, rate limiting ir observability.
+7. Praplėsti testus: LLM contract, telephony adapter, ilgi pokalbiai, nutrūkę skambučiai.

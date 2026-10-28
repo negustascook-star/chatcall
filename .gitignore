@@ -11,3 +11,7 @@ data/tenants/*/requests/*
 data/tenants/*/calls/*
 !data/tenants/*/requests/.gitkeep
 !data/tenants/*/calls/.gitkeep
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/

@@ -17,7 +17,19 @@ Inbound AI skambučių centro **verslo logika** (multi-tenant). Tai ne svetainė
 
 ## Greitas startas
 
-Reikia Node.js 20 ar naujesnio.
+Reikia Node.js 20.12 ar naujesnio.
+
+### Supabase katalogas
+
+Pridėtas ryšys su Supabase projektu `lzongluhbmyasadscuri`: HTTP API gali skaityti
+paslaugas ir padangų likučius iš mūsų sukurtų `services` bei `inventory` lentelių.
+Įjungimas, serverio rakto nustatymas ir patikra: **[docs/SUPABASE.md](docs/SUPABASE.md)**.
+SQL schema ir demonstraciniai duomenys yra `supabase/` kataloge.
+
+Pagal numatymą lieka `CATALOG_SOURCE=json`. Supabase įjungiamas serverio `.env`
+faile nustatant `CATALOG_SOURCE=supabase` ir serverio raktą. `.env` automatinis
+įkėlimas palaikomas nuo Node.js 20.12. Rezervacijų kalendoriaus ir išsaugojimo
+į `bookings` prijungimas yra kitas etapas.
 
 ```bash
 npm install
@@ -153,15 +165,18 @@ data/tenants/<tenant-id>/
 - Fallback po dviejų nesuprastų replikų.
 - JSON + Markdown + CSV išsaugojimas.
 - Transkriptai ir pokalbio santraukos.
-- HTTP API ir 15 testų.
+- Paslaugų ir sandėlio katalogas iš Supabase (`services`, `inventory`) arba JSON.
+- HTTP API ir 24 testai.
 
 ## Ko dar nėra
 
 - Tikro balso (STT/TTS), telefonijos Media Streams ir barge-in.
 - OpenAI / kito LLM adaptoriaus (dabar `RuleBasedBrain`).
-- Realaus kalendoriaus, CRM, sandėlio sistemos sinchronizacijos.
+- Realaus kalendoriaus ir dvipusės sandėlio sistemos sinchronizacijos.
+- `time_slots` / `bookings` lentelių panaudojimo pokalbio rezervacijai.
+- Poreikių ir transkriptų saugojimo DB.
 - Admin UI, autentifikacijos, mokėjimų, SMS.
-- Produkcinės DB / eilių / retry logikos.
+- Eilių / retry logikos.
 
 Šiame repo yra ir statinė Aical demonstracinė svetainė (`index.html`). Jos „Live API demo“ jungiasi prie žemiau aprašytos ChatCall API ir leidžia išbandyti realų `CallAgent` / `RuleBasedBrain` pokalbį. Likę svetainės blokai yra produkto dizaino peržiūra; administravimo, autentifikacijos ir mokėjimų funkcijų jie neteikia.
 
@@ -179,9 +194,15 @@ src/
 ├── requests/              # poreikių išsaugojimas (JSON/MD/CSV)
 ├── calls/                 # transkriptų išsaugojimas
 ├── tenants/               # tenant’ų įkėlimas ir rutinimas
+├── supabase/              # Supabase katalogo adapteris
 ├── lib/                   # tekstas, data, failų saugykla
 ├── api/                   # HTTP API
 └── cli/                   # demo
+
+supabase/
+├── config.toml            # vietinio Supabase projekto konfigūracija
+├── migrations/            # SQL schema
+└── seed.sql               # demonstraciniai duomenys
 ```
 
 ## Testai
@@ -200,11 +221,13 @@ Dengiama:
 - perdavimas žmogui;
 - fallback į žmogų ir neteisingo telefono numerio apdorojimas;
 - multi-tenant rutinimas pagal telefoną;
+- Supabase konfigūracija, katalogo mapinimas, puslapiavimas, klaidos ir tenant’ų izoliacija;
 - HTTP API pilnas skambutis ir klaidos.
 
 ## Toliau
 
-Architektūra, būsenų mašina ir Twilio/OpenAI prijungimo planas: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- Supabase paleidimas ir serverio rakto nustatymas: [docs/SUPABASE.md](docs/SUPABASE.md).
+- Architektūra, būsenų mašina ir Twilio/OpenAI prijungimo planas: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 
 ## Svetainė ir gyvas API demo
