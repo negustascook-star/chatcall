@@ -1,3 +1,4 @@
+import { routeReception, type ReceptionConfig } from "./reception.js";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
@@ -26,6 +27,7 @@ export interface ApiDependencies {
   warehousePlanPriceEur?: number;
   adminKey?: string;
   admin?: AdminDataSource;
+  reception?: ReceptionConfig;
 }
 
 interface ServerContext {
@@ -42,6 +44,7 @@ interface ServerContext {
   warehousePlanPriceEur?: number;
   adminKey?: string;
   admin?: AdminDataSource;
+  reception?: ReceptionConfig;
 }
 
 class HttpError extends Error {
@@ -85,6 +88,7 @@ export function createApiServer(deps: ApiDependencies): Server {
     warehousePlanPriceEur: deps.warehousePlanPriceEur,
     adminKey: deps.adminKey,
     admin: deps.admin,
+    reception: deps.reception,
   };
 
   return createServer(async (req, res) => {
@@ -123,6 +127,11 @@ async function route(
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
+
+  if (url.pathname === "/api/reception/check-availability") {
+    await routeReception(req, res, ctx.reception);
+    return;
+  }
 
   if (method === "OPTIONS") {
     sendNoContent(res);
@@ -551,3 +560,4 @@ function sendNoContent(res: ServerResponse): void {
   });
   res.end();
 }
+
