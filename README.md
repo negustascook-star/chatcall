@@ -255,3 +255,21 @@ Savininkų prisijungimas ir verslo duomenys naudoja Supabase Auth bei RLS. Prie�
 Platformos administratoriui skirta `/admin` panelė. Ją apsaugo serverio aplinkos kintamasis `ADMIN_KEY`; panelė rodo įmones, savininkų el. paštus, vizitus, skambučius ir leidžia aktyvuoti `pending`, `receptionist` arba `warehouse` planą, ieškoti bei filtruoti įmones, eksportuoti sąrašą į CSV, laikinai užblokuoti verslą (savininkas mato pranešimą `app.html` vietoje darbo aplinkos) arba jį visam laikui ištrinti. Supabase secret key naudojamas tik serverio pusėje. Administratoriaus API maršrutai yra `/api/admin/overview`, `/api/admin/companies`, `/api/admin/companies/:id/plan`, `/api/admin/companies/:id/suspend`, `/api/admin/companies/:id/restore`, `/api/admin/companies/:id` (`DELETE`), `/api/admin/appointments` ir `/api/admin/calls`.
 
 Mokėjimų tiekėjas, telefonija ir tiekėjų katalogai šiame diegime dar neprijungti. Todėl pasirinktas planas paskyroje lieka neaktyvus, skambučių / rezervacijų skiltyse rodomos tik realios DB eilutės, o tiekėjo informacija nepateikiama kaip gyva.
+
+
+## Demo client portal (Summit Auto Care)
+
+Prospective customers click **Log in** on the website and sign in with the published demo account (`auth.html` recognises it and opens `/demo`):
+
+- Email: `demo@aicall.example`
+- Password: `DemoGarage2026!` (override on the server with `DEMO_PASSWORD`)
+
+The portal is a fictional automotive workshop with 46 customers, ~200 bookings, ~260 calls, 49 parts and a full set of workflows: dashboard, call history with transcripts, customer/vehicle records, a day/week/month calendar with conflict prevention, inventory with reservations, parts requests that require human approval, and a simulated AI receptionist with five reproducible scenarios.
+
+**Isolation.** Demo data lives only in server memory and is regenerated from the seed at every start (no database, no file); it never touches Supabase, real tenants or `/api/admin`. Every `/api/demo/*` route except `/login` needs the demo bearer token (HMAC-signed, 8 h, in memory). Use **Reset demo data** in the sidebar (or `POST /api/demo/reset`) to restore the sample workshop.
+
+**What is simulated.** There is no live telephony, LLM or supplier integration. The receptionist is a deterministic rules engine over the demo data; calls are labelled "Simulated demo call". Supplier prices and delivery dates are fictional and labelled as such. The agent can only *propose* a parts request; a human must approve it, and "ordered" only records that a person placed an order — nothing is purchased.
+
+**Demo API (all under `/api/demo`).** `POST /login` · `GET /me|meta|dashboard|scenarios|tasks|jobs|requests|inventory|customers|calls|calendar|availability` · `POST|PATCH /customers`, `/vehicles`, `/bookings` (+ `/:id/cancel`, `/:id/complete`), `/service-requests`, `/inventory` (+ `/:id/adjust`, `/:id/movements`), `/requests/:id/action`, `/jobs/:id`, `/tasks/:id`, `/agent/sessions` (+ `/:id/messages|choose|end`), `POST /reset`.
+
+Because the data is in memory, demo changes disappear on every deploy or restart; this is intended.

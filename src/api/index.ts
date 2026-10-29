@@ -4,6 +4,7 @@ import { CallAgent } from "../agent/callAgent.js";
 import { SupabaseAdmin } from "../supabase/admin.js";
 import { SupabaseCatalog, readSupabaseConfig } from "../supabase/catalog.js";
 import { TenantRepository } from "../tenants/tenantRepository.js";
+import { DEMO_EMAIL, DEMO_PASSWORD_DEFAULT, DemoAuth, DemoStore, createDemoApi } from "../demo/api.js";
 import { createApiServer } from "./server.js";
 
 if (existsSync(".env")) {
@@ -46,7 +47,12 @@ const warehousePlanPriceEur = configuredWarehousePrice && /^\d+(\.\d{1,2})?$/.te
   ? Number(configuredWarehousePrice)
   : undefined;
 const validWarehousePrice = warehousePlanPriceEur && warehousePlanPriceEur > 200 ? warehousePlanPriceEur : undefined;
+// Demo client portal: in-memory sample data (re-seeded at every start). It never touches
+// Supabase or real tenants. DEMO_PASSWORD may override the published demo password.
+const demoStore = DemoStore.open();
+const demoAuth = new DemoAuth(DEMO_EMAIL, process.env.DEMO_PASSWORD?.trim() || DEMO_PASSWORD_DEFAULT);
 const server = createApiServer({
+  demo: createDemoApi(demoStore, demoAuth),
   dataDir, agent, tenants, catalogSource, websiteFile, supabaseUrl,
   // This must be a browser-safe publishable/anon key. Never expose the secret key.
   supabasePublicKey: publicKey,
@@ -63,6 +69,7 @@ server.listen(port, () => {
   if (!configuredAdminKey) {
     console.warn("ADMIN_KEY nenustatytas – naudojamas numatytasis demonstracinis raktas. Produkcijoje nustatykite savo ADMIN_KEY.");
   }
+  console.log("Demo portalas: /demo");
   console.log("Sveikatos patikra: GET /health");
 });
 

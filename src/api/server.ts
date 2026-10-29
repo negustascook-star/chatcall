@@ -11,6 +11,7 @@ import {
   type AdminDataSource,
 } from "../supabase/admin.js";
 import { TenantRepository } from "../tenants/tenantRepository.js";
+import type { DemoApi } from "../demo/api.js";
 
 export interface ApiDependencies {
   dataDir: string;
@@ -21,6 +22,9 @@ export interface ApiDependencies {
   authFile?: string;
   appFile?: string;
   adminFile?: string;
+  demoFile?: string;
+  /** Optional demo client portal (isolated storage, its own sign-in). */
+  demo?: DemoApi;
   supabaseUrl?: string;
   supabasePublicKey?: string;
   warehousePlanPriceEur?: number;
@@ -37,6 +41,8 @@ interface ServerContext {
   authFile: string;
   appFile: string;
   adminFile: string;
+  demoFile: string;
+  demo?: DemoApi;
   supabaseUrl?: string;
   supabasePublicKey?: string;
   warehousePlanPriceEur?: number;
@@ -71,6 +77,7 @@ export function createApiServer(deps: ApiDependencies): Server {
   const authFile = deps.authFile ?? path.join(path.dirname(websiteFile), "auth.html");
   const appFile = deps.appFile ?? path.join(path.dirname(websiteFile), "app.html");
   const adminFile = deps.adminFile ?? path.join(path.dirname(websiteFile), "admin.html");
+  const demoFile = deps.demoFile ?? path.join(path.dirname(websiteFile), "demo.html");
   const context: ServerContext = {
     agent: deps.agent,
     tenants,
@@ -80,6 +87,8 @@ export function createApiServer(deps: ApiDependencies): Server {
     authFile,
     appFile,
     adminFile,
+    demoFile,
+    demo: deps.demo,
     supabaseUrl: deps.supabaseUrl,
     supabasePublicKey: deps.supabasePublicKey,
     warehousePlanPriceEur: deps.warehousePlanPriceEur,
@@ -133,6 +142,13 @@ async function route(
     await sendWebsite(res, ctx.websiteFile);
     return;
   }
+
+  if (method === "GET" && (url.pathname === "/demo" || url.pathname === "/demo/" || url.pathname === "/demo.html")) {
+    await sendWebsite(res, ctx.demoFile);
+    return;
+  }
+
+  if (ctx.demo && (await ctx.demo.handle(req, res, url))) return;
 
   if (method === "GET" && url.pathname === "/auth.html") {
     await sendWebsite(res, ctx.authFile);

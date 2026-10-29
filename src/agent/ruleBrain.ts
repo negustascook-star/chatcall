@@ -712,6 +712,7 @@ export class RuleBasedBrain implements ConversationBrain {
           notes,
           summary,
         },
+        this.deps.now(),
       );
 
       state.requestId = created.request.id;

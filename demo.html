@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#09090b" />
+  <meta name="robots" content="noindex" />
+  <title>AIcall Demo — Summit Auto Care</title>
+  <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: Inter, ui-sans-serif, system-ui; }
+    .field { width: 100%; border: 1px solid #e4e4e7; border-radius: 10px; padding: 9px 11px; font-size: 13px; outline: none; background: #fff; }
+    .field:focus { border-color: #8b7aff; box-shadow: 0 0 0 3px rgba(139,122,255,.15); }
+    .field[aria-invalid="true"] { border-color: #f43f5e; }
+    .navbtn { display:flex; align-items:center; gap:10px; width:100%; border-radius:10px; padding:9px 12px; text-align:left; font-size:12px; color:#52525b; transition: background .15s; }
+    .navbtn:hover { background:#f4f4f5; }
+    .navbtn.active { background:#f3f0ff; color:#6847d9; font-weight:600; }
+    .btn { border-radius: 10px; padding: 8px 14px; font-size: 12px; font-weight: 600; transition: background .15s, opacity .15s; display:inline-flex; align-items:center; gap:6px; justify-content:center; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-primary { background:#18181b; color:#fff; } .btn-primary:hover:not(:disabled) { background:#27272a; }
+    .btn-violet { background:#6847d9; color:#fff; } .btn-violet:hover:not(:disabled) { background:#5a3bc4; }
+    .btn-ghost { border:1px solid #e4e4e7; background:#fff; color:#3f3f46; } .btn-ghost:hover:not(:disabled) { background:#f4f4f5; }
+    .btn-danger { border:1px solid #fecdd3; background:#fff; color:#be123c; } .btn-danger:hover:not(:disabled) { background:#fff1f2; }
+    .card { border:1px solid #e4e4e7; background:#fff; border-radius:16px; min-width:0; }
+    main#content > div > *, main#content section { min-width:0; }
+    .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .pill { display:inline-flex; align-items:center; border-radius:999px; padding:2px 9px; font-size:10px; font-weight:600; white-space:nowrap; }
+    th { text-align:left; font-weight:600; } 
+    :focus-visible { outline: 2px solid #8b7aff; outline-offset: 2px; }
+    .chip { transition: filter .15s; cursor:pointer; text-align:left; } .chip:hover { filter: brightness(.96); }
+    .scroll-thin { scrollbar-width: thin; }
+    .spin { width:16px; height:16px; border:2px solid #d4d4d8; border-top-color:#6847d9; border-radius:50%; animation: sp .7s linear infinite; display:inline-block; }
+    @keyframes sp { to { transform: rotate(360deg); } }
+    .bubble-ai { background:#f3f0ff; color:#27272a; } .bubble-c { background:#18181b; color:#fff; }
+    .login-bg { background: radial-gradient(circle at 20% 10%, rgba(124,92,245,.35), transparent 45%), radial-gradient(circle at 85% 90%, rgba(76,29,149,.4), transparent 45%), #09090b; }
+    pre.wrap { white-space: pre-wrap; font-family: inherit; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f7f7f9] text-zinc-900">
+  <div id="loading" class="grid min-h-screen place-items-center text-sm text-zinc-500"><span class="spin"></span></div>
+
+  <!-- ===== Portal ===== -->
+  <div id="portal" class="hidden min-h-screen md:flex">
+    <aside class="w-full shrink-0 border-b border-zinc-200 bg-white p-4 md:sticky md:top-0 md:h-screen md:w-60 md:overflow-y-auto md:border-b-0 md:border-r md:p-5">
+      <div class="flex items-center justify-between md:block">
+        <a href="/" class="flex items-center gap-2.5 text-[16px] font-semibold tracking-[-.02em]" title="Back to the website"><img src="/logo-mark.svg" alt="" class="h-8 w-8" /><span><span class="text-violet-600">AI</span>call</span></a>
+        <button id="menuBtn" class="btn btn-ghost md:hidden" aria-expanded="false" aria-controls="menuWrap">Menu</button>
+      </div>
+      <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-4 text-amber-900"><b>DEMO</b> · Summit Auto Care<br />Fictional data, safe to edit.</div>
+      <div id="menuWrap" class="hidden md:block">
+      <nav id="nav" class="mt-4 space-y-0.5" aria-label="Portal"></nav>
+      <div class="mt-5 border-t border-zinc-100 pt-4" id="sideFoot">
+        <div class="text-[10px] text-zinc-400" id="whoami"></div>
+        <button id="resetBtn" class="mt-2 text-[11px] font-medium text-zinc-500 hover:text-zinc-800">Reset demo data</button>
+        <div class="mt-3 flex flex-col gap-2"><a href="/" class="btn btn-ghost">← Back to website</a><button id="logoutBtn" class="btn btn-primary">Log out</button></div>
+      </div>
+      </div>
+    </aside>
+    <div class="min-w-0 flex-1">
+      <header class="flex items-center justify-between gap-3 border-b border-zinc-200 bg-white px-4 py-3.5 md:px-8">
+        <div><h1 id="title" class="text-base font-semibold tracking-tight"></h1><p id="subtitle" class="text-[11px] text-zinc-500"></p></div>
+        <div id="headerActions" class="flex flex-wrap items-center gap-2"></div>
+      </header>
+      <main id="content" class="p-4 md:p-8" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-950/40 p-3 md:p-6" role="presentation">
+    <div id="modalCard" class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl md:p-6" role="dialog" aria-modal="true"></div>
+  </div>
+  <div id="toasts" class="pointer-events-none fixed bottom-4 right-4 z-[60] flex max-w-sm flex-col gap-2" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const money = (n) => '€' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  const TOKEN_KEY = 'aicall_demo_token';
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const pad = (n) => String(n).padStart(2, '0');
+  const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const parse = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d, 12); };
+  const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return ymd(d); };
+  const pretty = (s) => { const d = parse(s); return `${DAYS[d.getDay()].slice(0, 3)}, ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`; };
+  const toMin = (t) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  const fromMin = (n) => `${pad(Math.floor(n / 60))}:${pad(n % 60)}`;
+  const weekStart = (s) => { const wd = parse(s).getDay(); return addDays(s, wd === 0 ? -6 : 1 - wd); };
+
+  const S = { view: 'dashboard', meta: null, today: null, cal: { mode: 'week', date: null }, mechFilter: '', pending: 0 };
+
+  // ------------------------------------------------------------- api
+  class ApiError extends Error { constructor(msg, status) { super(msg); this.status = status; } }
+  async function api(path, opts = {}) {
+    const headers = { Accept: 'application/json' };
+    const token = sessionStorage.getItem(TOKEN_KEY);
+    if (token) headers.Authorization = 'Bearer ' + token;
+    if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+    let res;
+    try { res = await fetch('/api/demo' + path, { method: opts.method || 'GET', headers, body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined }); }
+    catch { throw new ApiError('Cannot reach the server. Check your connection and try again.', 0); }
+    let data = null;
+    try { data = await res.json(); } catch { /* empty */ }
+    if (res.status === 401 && path !== '/login') { sessionStorage.removeItem(TOKEN_KEY); showLogin(); throw new ApiError('Session expired.', 401); }
+    if (!res.ok) throw new ApiError((data && data.error) || `Request failed (${res.status}).`, res.status);
+    return data;
+  }
+  const qs = (o) => { const p = new URLSearchParams(); for (const [k, v] of Object.entries(o)) if (v !== '' && v != null) p.set(k, v); const s = p.toString(); return s ? '?' + s : ''; };
+
+  function toast(msg, kind = 'ok') {
+    const el = document.createElement('div');
+    el.className = `pointer-events-auto rounded-xl border px-4 py-3 text-xs shadow-lg ${kind === 'err' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-900'}`;
+    el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+    el.textContent = msg;
+    $('#toasts').appendChild(el);
+    setTimeout(() => el.remove(), kind === 'err' ? 7000 : 3800);
+  }
+  async function act(btn, fn, okMsg) {
+    if (btn) btn.disabled = true;
+    try { const r = await fn(); if (okMsg) toast(okMsg); return r; }
+    catch (e) { if (e.status !== 401) toast(e.message, 'err'); return undefined; }
+    finally { if (btn && btn.isConnected) btn.disabled = false; }
+  }
+
+  // ---------------------------------------------------------- badges
+  const TONE = { green: 'bg-emerald-100 text-emerald-800', amber: 'bg-amber-100 text-amber-800', red: 'bg-rose-100 text-rose-800', violet: 'bg-violet-100 text-violet-800', zinc: 'bg-zinc-100 text-zinc-700', blue: 'bg-sky-100 text-sky-800' };
+  const pill = (text, tone = 'zinc') => `<span class="pill ${TONE[tone]}">${esc(text)}</span>`;
+  const STATUS = {
+    confirmed: ['Confirmed', 'green'], pending: ['Awaiting confirmation', 'amber'], completed: ['Completed', 'zinc'], cancelled: ['Cancelled', 'red'], no_show: ['No-show', 'red'],
+    missed: ['Missed', 'red'], new_inquiry: ['New inquiry', 'blue'], follow_up: ['Follow-up', 'violet'],
+    in_stock: ['In stock', 'green'], low_stock: ['Low stock', 'amber'], out_of_stock: ['Out of stock', 'red'], fully_reserved: ['Reserved for a repair', 'violet'],
+    requested: ['Requested', 'blue'], pending_inspection: ['Awaiting inspection', 'amber'], awaiting_parts: ['Awaiting parts', 'red'], scheduled: ['Scheduled', 'green'], in_progress: ['In progress', 'violet'], ready: ['Ready for repair', 'green'],
+    awaiting_verification: ['Awaiting inventory verification', 'amber'], parts_required: ['Parts required', 'red'], awaiting_price_confirmation: ['Awaiting price confirmation', 'amber'], awaiting_approval: ['Awaiting human approval', 'amber'],
+    approved: ['Approved for manual ordering', 'blue'], ordered: ['Ordered by authorised human', 'violet'], received: ['Parts received', 'green'], ready_for_repair: ['Ready for repair', 'green'],
+  };
+  const badge = (s) => { const [t, tone] = STATUS[s] || [s, 'zinc']; return pill(t, tone); };
+  const KIND = { service: ['Service', 'zinc'], inspection: ['Inspection', 'amber'], repair: ['Repair', 'violet'] };
+  const kindBadge = (k) => pill(...(KIND[k] || [k, 'zinc']));
+  const simBadge = (c) => c.simulated ? pill('Simulated demo call', 'violet') : '';
+  const chipColor = (b) => b.status === 'cancelled' || b.status === 'no_show' ? 'border-rose-200 bg-rose-50 text-rose-800 line-through opacity-70'
+    : b.status === 'completed' ? 'border-zinc-200 bg-zinc-50 text-zinc-600'
+    : b.status === 'pending' ? 'border-amber-300 bg-amber-50 text-amber-900'
+    : b.kind === 'inspection' ? 'border-sky-200 bg-sky-50 text-sky-900' : 'border-violet-200 bg-violet-50 text-violet-900';
+
+  // -------------------------------------------------------------- ui
+  const empty = (t) => `<div class="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center text-xs text-zinc-500">${t}</div>`;
+  const loading = () => `<div class="grid place-items-center p-12 text-xs text-zinc-500"><span class="spin mb-3"></span>Loading…</div>`;
+  const errBox = (e, retry) => `<div class="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-xs text-rose-800" role="alert"><b>Couldn't load this section.</b> ${esc(e.message)} <button class="ml-2 font-semibold underline" data-retry="${retry}">Try again</button></div>`;
+  const stat = (label, value, sub, tone = '', go = '') => `<${go ? 'button' : 'div'} ${go ? `data-go="${go}"` : ''} class="card p-4 text-left ${go ? 'chip' : ''}"><div class="text-[11px] text-zinc-500">${esc(label)}</div><div class="mt-1 text-2xl font-semibold tracking-tight ${tone}">${value}</div><div class="mt-0.5 text-[10px] text-zinc-400">${sub || '&nbsp;'}</div></${go ? 'button' : 'div'}>`;
+  const section = (title, body, extra = '') => `<section class="card p-4 md:p-5"><div class="mb-3 flex items-center justify-between gap-2"><h2 class="text-sm font-semibold">${esc(title)}</h2>${extra}</div>${body}</section>`;
+  const field = (label, input, hint = '') => `<label class="block text-[11px] font-medium text-zinc-600">${esc(label)}<div class="mt-1">${input}</div>${hint ? `<div class="mt-0.5 text-[10px] font-normal text-zinc-400">${esc(hint)}</div>` : ''}</label>`;
+  const inp = (name, v = '', o = {}) => `<input class="field" name="${name}" value="${esc(v)}" ${o.type ? `type="${o.type}"` : ''} ${o.req ? 'required' : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.min != null ? `min="${o.min}"` : ''} ${o.max != null ? `max="${o.max}"` : ''} ${o.step ? `step="${o.step}"` : ''} ${o.maxlength ? `maxlength="${o.maxlength}"` : ''}>`;
+  const sel = (name, opts, cur = '', o = {}) => `<select class="field" name="${name}" ${o.req ? 'required' : ''}>${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(v) === String(cur) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
+  const formData = (form) => Object.fromEntries([...new FormData(form).entries()].map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v]));
+
+  function openModal(html, wide = false) {
+    $('#modalCard').className = `max-h-[92vh] w-full ${wide ? 'max-w-4xl' : 'max-w-2xl'} overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl md:p-6`;
+    $('#modalCard').innerHTML = html;
+    $('#modal').classList.remove('hidden'); $('#modal').classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    const f = $('#modalCard input,#modalCard select,#modalCard textarea,#modalCard button'); if (f) f.focus({ preventScroll: true });
+  }
+  function closeModal() { $('#modal').classList.add('hidden'); $('#modal').classList.remove('flex'); $('#modalCard').innerHTML = ''; document.body.style.overflow = ''; }
+  const modalHead = (title, sub = '') => `<div class="mb-4 flex items-start justify-between gap-3"><div><h2 class="text-base font-semibold tracking-tight">${title}</h2>${sub ? `<p class="mt-0.5 text-[11px] text-zinc-500">${sub}</p>` : ''}</div><button class="btn btn-ghost" data-close aria-label="Close">✕</button></div>`;
+  $('#modal').addEventListener('mousedown', (e) => { if (e.target.id === 'modal') closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#modal').classList.contains('hidden')) closeModal(); });
+  document.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(); });
+
+  // ------------------------------------------------------------- shell
+  const NAV = [
+    ['dashboard', 'Dashboard', '▦'], ['agent', 'AI receptionist', '☎'], ['calls', 'Call history', '✆'], ['calendar', 'Calendar', '▤'],
+    ['customers', 'Customers & vehicles', '☺'], ['inventory', 'Inventory', '▣'], ['requests', 'Parts requests', '⚑'], ['jobs', 'Jobs & tasks', '✓'],
+  ];
+  const TITLES = {
+    dashboard: ['Dashboard', 'Live overview of the workshop and your AI receptionist'], agent: ['AI receptionist', 'Run a simulated incoming call end to end'], calls: ['Call history', 'Every call with AI summaries and transcripts'],
+    calendar: ['Workshop calendar', 'Appointments by mechanic, with conflict protection'], customers: ['Customers & vehicles', 'Searchable customer and vehicle records'], inventory: ['Inventory', 'Stock, reservations and movements'],
+    requests: ['Parts requests', 'Proposed purchases that need a human decision'], jobs: ['Jobs & tasks', 'Repair jobs and workshop to-dos'],
+  };
+  function renderNav() {
+    $('#nav').innerHTML = NAV.map(([id, label, ic]) => `<button class="navbtn ${S.view === id ? 'active' : ''}" data-view="${id}" ${S.view === id ? 'aria-current="page"' : ''}><span aria-hidden="true" class="w-4 text-center">${ic}</span>${label}</button>`).join('');
+  }
+  $('#nav').addEventListener('click', (e) => { const b = e.target.closest('[data-view]'); if (b) { go(b.dataset.view); $('#menuWrap').classList.add('hidden'); $('#menuBtn').setAttribute('aria-expanded', 'false'); } });
+  $('#menuBtn').addEventListener('click', () => { const n = $('#menuWrap'); const open = n.classList.toggle('hidden') === false; $('#menuBtn').setAttribute('aria-expanded', String(open)); });
+  document.addEventListener('click', (e) => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go); });
+  document.addEventListener('click', (e) => { const r = e.target.closest('[data-retry]'); if (r) go(r.dataset.retry, true); });
+
+  async function go(view, keep = false) {
+    if (!keep) { S.view = view; location.hash = view; }
+    const t = TITLES[view] || ['', '']; $('#title').textContent = t[0]; $('#subtitle').textContent = t[1]; $('#headerActions').innerHTML = '';
+    renderNav(); document.title = `${t[0]} · AIcall Demo`;
+    $('#content').innerHTML = loading();
+    const token = ++S.pending;
+    try {
+      const out = await VIEWS[view]();
+      if (token !== S.pending) return;
+      if (typeof out === 'string') $('#content').innerHTML = out;
+      if (VIEWS[view + '$after']) VIEWS[view + '$after']();
+    } catch (e) { if (e.status !== 401 && token === S.pending) $('#content').innerHTML = errBox(e, view); }
+  }
+
+  const refresh = () => go(S.view, true);
+
+  // ---------------------------------------------------------- session
+  function showLogin() { sessionStorage.removeItem(TOKEN_KEY); location.replace('/auth.html?mode=login'); }
+  async function showPortal() {
+    S.meta = await api('/meta'); S.today = S.meta.today;
+    S.cal.date = S.today;
+    $('#loading').classList.add('hidden'); $('#portal').classList.remove('hidden'); $('#portal').classList.add('md:flex');
+    $('#whoami').textContent = 'Signed in as demo@aicall.example';
+    const v = location.hash.slice(1); S.view = VIEWS[v] ? v : 'dashboard'; go(S.view, true);
+  }
+  $('#logoutBtn').addEventListener('click', () => { sessionStorage.removeItem(TOKEN_KEY); location.href = '/'; });
+  $('#resetBtn').addEventListener('click', async (e) => {
+    if (!confirm('Reset all demo data to the original sample workshop? Your changes will be lost.')) return;
+    await act(e.target, () => api('/reset', { method: 'POST', body: {} }), 'Demo data reset.'); S.meta = await api('/meta'); refresh();
+  });
+
+  // ------------------------------------------------------------ helpers
+  const bookingChip = (b, compact = false) => `<button class="chip block w-full rounded-lg border px-2 py-1 text-[10px] leading-4 ${chipColor(b)}" data-booking="${b.id}" title="${esc(b.customerName)} · ${esc(b.repairType)}"><b>${b.start}</b> ${esc(b.customerName.split(' ')[0])} · ${esc(b.vehicle.split(' ').slice(1).join(' '))}${compact ? '' : `<br><span class="opacity-80">${esc(b.repairType)} · ${esc(b.mechanicName.split(' ')[0])}</span>`}${b.partsState === 'missing' && b.status !== 'cancelled' ? ' <span title="Parts missing">⚠</span>' : ''}</button>`;
+  const partsLine = (c) => `<tr class="border-t border-zinc-100"><td class="py-2 pr-2">${esc(c.description)}${c.compat === 'uncertain' ? ' <span class="pill bg-amber-100 text-amber-800">fitment unverified</span>' : ''}</td><td class="py-2 pr-2 text-center">${c.qty}</td><td class="py-2 pr-2 text-center">${c.available}${c.reserved ? ` <span class="text-zinc-400">(${c.reserved} reserved)</span>` : ''}</td><td class="py-2 text-right">${c.shortfall ? pill(c.shortfall + ' short', 'red') : pill('available', 'green')}</td></tr>`;
+  const partsTable = (parts) => parts.length ? `<div class="overflow-x-auto"><table class="w-full text-xs"><thead class="text-[10px] uppercase tracking-wider text-zinc-400"><tr><th class="pb-1">Part</th><th class="pb-1 text-center">Qty</th><th class="pb-1 text-center">Available</th><th class="pb-1 text-right">Status</th></tr></thead><tbody>${parts.map(partsLine).join('')}</tbody></table></div>` : '<p class="text-xs text-zinc-500">No parts required.</p>';
+  const kv = (k, v) => `<div><dt class="text-[10px] uppercase tracking-wider text-zinc-400">${k}</dt><dd class="mt-0.5 text-xs text-zinc-800">${v || '—'}</dd></div>`;
+  const callRow = (c) => `<tr class="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50" data-call="${c.id}" tabindex="0" role="button" aria-label="Open call ${esc(c.name)}"><td class="p-3 whitespace-nowrap">${pretty(c.date)}<div class="text-[10px] text-zinc-400">${c.time}</td><td class="p-3"><div class="font-medium">${esc(c.name)}</div><div class="text-[10px] text-zinc-400">${esc(c.phone)}</div></td><td class="p-3">${badge(c.status)}${c.simulated ? '<div class="mt-1">' + pill('Simulated', 'violet') + '</div>' : ''}</td><td class="hidden p-3 md:table-cell">${esc(c.vehicle)}</td><td class="hidden max-w-xs p-3 text-zinc-600 lg:table-cell"><div class="line-clamp-2">${esc(c.summary)}</div></td><td class="hidden p-3 sm:table-cell">${c.durationSec ? Math.floor(c.durationSec / 60) + ':' + pad(c.durationSec % 60) : '—'}</td><td class="p-3">${esc(c.appointmentStatus)}</td></tr>`;
+  const emptyToday = (n) => n === 0 ? '' : '';
+  document.addEventListener('click', (e) => { const c = e.target.closest('[data-call]'); if (c) openCall(c.dataset.call); const b = e.target.closest('[data-booking]'); if (b) openBooking(b.dataset.booking); const cu = e.target.closest('[data-customer]'); if (cu) openCustomer(cu.dataset.customer); const rq = e.target.closest('[data-request]'); if (rq) { S.focusRequest = rq.dataset.request; closeModal(); go('requests'); } });
+  document.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-call][role=button]')) { e.preventDefault(); openCall(e.target.dataset.call); } });
+
+  // ---------------------------------------------------------------- views
+  const VIEWS = {};
+
+  VIEWS.dashboard = async () => {
+    const d = await api('/dashboard'); const c = d.cards;
+    $('#headerActions').innerHTML = `<button class="btn btn-violet" data-go="agent">☎ Simulate incoming call</button>`;
+    return `
+    <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+      ${stat('Calls today', c.callsToday, `${pretty(d.today)}`, '', 'calls')}
+      ${stat('Answered by AI', c.answeredByAi, c.callsToday ? Math.round(c.answeredByAi / c.callsToday * 100) + '% of today’s calls' : 'No calls yet today', 'text-emerald-600', 'calls')}
+      ${stat('Missed / unresolved', c.missedOrUnresolved, `${c.missedOrUnresolvedTotal} unresolved overall`, c.missedOrUnresolved ? 'text-rose-600' : '', 'calls')}
+      ${stat('New service requests', c.newServiceRequests, 'last 7 days, not yet booked', '', 'jobs')}
+      ${stat('Appointments today', c.appointmentsToday, `${c.appointmentsTodayLeft} still to come`, '', 'calendar')}
+      ${stat('Upcoming appointments', c.upcomingAppointments, 'confirmed & pending', '', 'calendar')}
+      ${stat('Repairs awaiting parts', c.repairsAwaitingParts, 'blocked by missing stock', c.repairsAwaitingParts ? 'text-amber-600' : '', 'requests')}
+      ${stat('Parts to purchase', c.partsToPurchase, `${c.partsRequestsOpen} open request(s)`, c.partsToPurchase ? 'text-amber-600' : '', 'requests')}
+      ${stat('Service revenue (month)', money(c.revenueMonth), `${c.revenueMonthJobs} completed jobs · estimate`, '', 'jobs')}
+      ${stat('Pending job value', money(c.pendingJobValue), `${c.pendingJobs} open jobs · estimate`, 'text-violet-700', 'jobs')}
+    </div>
+    <p class="mt-2 text-[10px] text-zinc-400">Revenue and job value are estimates from job quotes, not invoiced amounts. All data is fictional.</p>
+    <div class="mt-5 grid gap-4 xl:grid-cols-3">
+      ${section('Upcoming appointments', d.upcoming.length ? `<div class="space-y-2">${d.upcoming.map((b) => `<button class="chip flex w-full items-center justify-between gap-3 rounded-xl border border-zinc-200 px-3 py-2 text-xs hover:bg-zinc-50" data-booking="${b.id}"><div><div class="font-medium">${pretty(b.date)} · ${b.start} — ${esc(b.customerName)}</div><div class="text-[10px] text-zinc-500">${esc(b.vehicle)} · ${esc(b.repairType)} · ${esc(b.mechanicName)}</div></div><div class="text-right">${badge(b.status)}${b.partsState === 'missing' ? '<div class="mt-1">' + pill('parts missing', 'red') + '</div>' : ''}</div></button>`).join('')}</div>` : empty('No upcoming appointments.'), `<button class="text-[11px] font-semibold text-violet-700" data-go="calendar">Open calendar →</button>`)}
+      ${section('Recent activity', d.recent.length ? `<ul class="space-y-2.5">${d.recent.map((a) => `<li class="flex gap-2.5 text-xs"><span class="mt-0.5 text-violet-500" aria-hidden="true">${a.type === 'call' ? '✆' : '▤'}</span><div class="min-w-0"><button class="text-left hover:underline" ${a.type === 'call' ? `data-call="${a.ref}"` : `data-booking="${a.ref}"`}>${esc(a.text)}</button> ${a.simulated ? pill('simulated', 'violet') : ''}<div class="text-[10px] text-zinc-400">${esc(a.at.replace('T', ' ').slice(0, 16))}</div></div></li>`).join('')}</ul>` : empty('No recent activity.'), `<button class="text-[11px] font-semibold text-violet-700" data-go="calls">All calls →</button>`)}
+      ${section('Urgent inventory alerts', d.stockAlerts.length ? `<ul class="space-y-2">${d.stockAlerts.map((p) => `<li class="flex items-center justify-between gap-2 text-xs"><span class="min-w-0 truncate">${esc(p.name)}<span class="block text-[10px] text-zinc-400">${p.quantity} on hand · ${p.reserved} reserved · min ${p.minStock}</span></span>${badge(p.status)}</li>`).join('')}</ul>` : empty('Stock levels are healthy.'), `<button class="text-[11px] font-semibold text-violet-700" data-go="inventory">Inventory →</button>`)}
+      ${section('New customer requests', d.newRequests.length ? `<ul class="space-y-2">${d.newRequests.map((j) => `<li class="rounded-xl border border-zinc-200 p-3 text-xs"><div class="font-medium">${esc(j.customerName)} — ${esc(j.title)}</div><div class="text-[10px] text-zinc-500">${esc(j.vehicle)} · ${money(j.estimate)} est.</div><div class="mt-1.5 flex items-center gap-2">${badge(j.status)}<button class="text-[11px] font-semibold text-violet-700" data-newbooking="${j.id}">Schedule →</button></div></li>`).join('')}</ul>` : empty('No unscheduled requests.'), `<button class="text-[11px] font-semibold text-violet-700" data-go="jobs">Jobs →</button>`)}
+      ${section('Needs your decision', d.requestsAwaiting.length ? `<ul class="space-y-2">${d.requestsAwaiting.map((r) => `<li class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs"><div class="font-medium">${esc(r.id)} · ${esc(r.customerName)} (${esc(r.vehicle)})</div><div class="text-[10px] text-amber-900">${r.lines.map((l) => l.shortfall + '× ' + esc(l.description)).join(', ')} · ≈ ${money(r.total)} (simulated)</div><button class="mt-1.5 text-[11px] font-semibold text-violet-700" data-request="${r.id}">Review request →</button></li>`).join('')}</ul>` : empty('Nothing waiting for approval.'))}
+      ${section('Workshop tasks', d.tasks.length ? `<ul class="space-y-2">${d.tasks.map((t) => `<li class="flex items-start gap-2 text-xs"><input type="checkbox" class="mt-0.5" data-task="${t.id}" aria-label="Mark done: ${esc(t.text)}"><span>${esc(t.text)}<span class="block text-[10px] text-zinc-400">due ${pretty(t.due)}</span></span></li>`).join('')}</ul>` : empty('All tasks are done.'), `<button class="text-[11px] font-semibold text-violet-700" data-go="jobs">All tasks →</button>`)}
+    </div>`;
+  };
+  VIEWS['dashboard$after'] = () => {};
+  document.addEventListener('change', async (e) => {
+    const t = e.target.closest('[data-task]'); if (!t) return;
+    await act(t, () => api('/tasks/' + t.dataset.task, { method: 'PATCH', body: { done: t.checked } }), 'Task updated.'); refresh();
+  });
+  document.addEventListener('click', (e) => { const n = e.target.closest('[data-newbooking]'); if (n) openBookingForm({ jobId: n.dataset.newbooking }); });
+
+  // ---- calls
+  S.callFilter = { q: '', status: '', booking: '', from: '', to: '', customer: '' };
+  VIEWS.calls = async () => {
+    const f = S.callFilter;
+    const [data, cust] = await Promise.all([api('/calls' + qs({ ...f, limit: 200 })), api('/customers')]);
+    $('#headerActions').innerHTML = `<button class="btn btn-violet" data-go="agent">☎ Simulate incoming call</button>`;
+    return `
+    <form id="callFilters" class="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
+      <div class="lg:col-span-2">${field('Search', inp('q', f.q, { ph: 'Name, phone, vehicle, reason…' }))}</div>
+      ${field('Status', sel('status', [['', 'All statuses'], ['completed', 'Completed'], ['missed', 'Missed'], ['new_inquiry', 'New inquiry'], ['follow_up', 'Follow-up']], f.status))}
+      ${field('Booking status', sel('booking', [['', 'Any'], ['confirmed', 'Confirmed'], ['pending', 'Awaiting confirmation'], ['completed', 'Completed'], ['cancelled', 'Cancelled'], ['no_show', 'No-show'], ['none', 'No booking']], f.booking))}
+      ${field('Customer', sel('customer', [['', 'All customers'], ...cust.items.map((c) => [c.id, c.name])], f.customer))}
+      <div class="grid grid-cols-2 gap-2">${field('From', inp('from', f.from, { type: 'date' }))}${field('To', inp('to', f.to, { type: 'date' }))}</div>
+      <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-6"><button class="btn btn-primary" type="submit">Apply filters</button><button class="btn btn-ghost" type="button" id="clearCalls">Clear</button><span class="ml-auto text-[11px] text-zinc-500">${data.total} call${data.total === 1 ? '' : 's'}</span></div>
+    </form>
+    ${data.items.length ? `<div class="card overflow-x-auto"><table class="w-full text-xs"><thead class="bg-zinc-50 text-[10px] uppercase tracking-wider text-zinc-500"><tr><th class="p-3">When</th><th class="p-3">Caller</th><th class="p-3">Status</th><th class="hidden p-3 md:table-cell">Vehicle</th><th class="hidden p-3 lg:table-cell">AI summary</th><th class="hidden p-3 sm:table-cell">Duration</th><th class="p-3">Appointment</th></tr></thead><tbody>${data.items.map(callRow).join('')}</tbody></table></div>${data.total > data.items.length ? `<p class="mt-2 text-[11px] text-zinc-500">Showing the latest ${data.items.length}. Narrow the filters to see others.</p>` : ''}` : empty('No calls match these filters.')}`;
+  };
+  VIEWS['calls$after'] = () => {
+    $('#callFilters').addEventListener('submit', (e) => { e.preventDefault(); S.callFilter = formData(e.target); refresh(); });
+    $('#clearCalls').addEventListener('click', () => { S.callFilter = { q: '', status: '', booking: '', from: '', to: '', customer: '' }; refresh(); });
+  };
+
+  async function openCall(id) {
+    openModal(loading(), true);
+    try {
+      const d = await api('/calls/' + id); const c = d.call;
+      const bks = d.bookings.length ? d.bookings : (d.booking ? [d.booking] : []);
+      openModal(`${modalHead(`${esc(c.name)} · ${esc(c.phone)}`, `${pretty(c.date)} at ${c.time} · ${c.durationSec ? Math.floor(c.durationSec / 60) + ' min ' + pad(c.durationSec % 60) + ' s' : 'no connection'}`)}
+      <div class="mb-3 flex flex-wrap gap-2">${badge(c.status)}${simBadge(c)}${c.appointmentStatus ? pill(c.appointmentStatus, 'zinc') : ''}</div>
+      <p class="mb-4 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[11px] text-violet-900">${esc(d.notice)} Summaries describe what the customer <b>reported</b>; they are not mechanical diagnoses.</p>
+      <dl class="grid gap-3 sm:grid-cols-2">${kv('Customer', c.customerId ? `<button class="font-medium text-violet-700 hover:underline" data-customer="${c.customerId}">${esc(c.name)}</button>` : esc(c.name))}${kv('Vehicle', esc(c.vehicle))}${kv('Reason for calling', esc(c.reason))}${kv('Requested', esc(c.requested))}${kv('Estimated cost', c.estimate != null ? money(c.estimate) : '—')}${kv('Missing parts', esc(c.missingParts))}${kv('Follow-up', esc(c.followUp))}${kv('Linked job', c.jobId ? esc(c.jobId) + (d.job ? ' · ' + badge(d.job.status) : '') : '—')}</dl>
+      <div class="mt-4"><h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">AI conversation summary</h3><p class="rounded-xl bg-zinc-50 p-3 text-xs leading-5">${esc(c.summary)}</p></div>
+      ${bks.length ? `<div class="mt-4"><h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Appointments</h3><div class="space-y-1.5">${bks.map((b) => `<button class="chip flex w-full items-center justify-between rounded-xl border border-zinc-200 px-3 py-2 text-xs hover:bg-zinc-50" data-booking="${b.id}"><span>${pretty(b.date)} ${b.start} · ${esc(b.repairType)} · ${esc(b.mechanicName)}</span>${badge(b.status)}</button>`).join('')}</div></div>` : ''}
+      ${d.request ? `<div class="mt-4"><h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Parts request</h3><button class="chip flex w-full items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs" data-request="${d.request.id}"><span>${esc(d.request.id)} · ${d.request.lines.map((l) => l.shortfall + '× ' + esc(l.description)).join(', ')}</span>${badge(d.request.status)}</button></div>` : ''}
+      ${d.tasks.length ? `<div class="mt-4"><h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Follow-up tasks</h3><ul class="space-y-1 text-xs">${d.tasks.map((t) => `<li>${t.done ? '☑' : '☐'} ${esc(t.text)}</li>`).join('')}</ul></div>` : ''}
+      <div class="mt-4"><h3 class="mb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Transcript</h3><div class="space-y-2">${c.transcript.length ? c.transcript.map((t) => t.role === 'system' ? `<div class="text-center text-[10px] text-zinc-400">${esc(t.text)}</div>` : `<div class="flex ${t.role === 'ai' ? '' : 'justify-end'}"><div class="max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-5 ${t.role === 'ai' ? 'bubble-ai' : 'bubble-c'}"><div class="mb-0.5 text-[9px] font-semibold uppercase tracking-wider opacity-60">${t.role === 'ai' ? 'AI receptionist' : 'Customer'}</div><pre class="wrap">${esc(t.text)}</pre></div></div>`).join('') : '<p class="text-xs text-zinc-500">No transcript recorded.</p>'}</div></div>`, true);
+    } catch (e) { openModal(`${modalHead('Call')}<p class="text-xs text-rose-700">${esc(e.message)}</p>`); }
+  }
+
+  // ---- calendar
+  VIEWS.calendar = async () => {
+    const { mode } = S.cal; const date = S.cal.date;
+    let from, to;
+    if (mode === 'day') { from = to = date; }
+    else if (mode === 'week') { from = weekStart(date); to = addDays(from, 6); }
+    else { const first = date.slice(0, 8) + '01'; from = weekStart(first); const d = parse(first); const last = ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0, 12)); to = addDays(weekStart(last), 6); }
+    const data = await api('/calendar' + qs({ from, to }));
+    S.calData = data;
+    const items = data.items.filter((b) => !S.mechFilter || b.mechanicId === S.mechFilter);
+    const label = mode === 'day' ? `${DAYS[parse(date).getDay()]}, ${pretty(date).split(', ')[1]}` : mode === 'week' ? `${pretty(from)} – ${pretty(to)}` : `${MONTHS[parse(date).getMonth()]} ${parse(date).getFullYear()}`;
+    $('#headerActions').innerHTML = `<button class="btn btn-violet" id="newBooking">+ New appointment</button>`;
+    const mechs = S.meta.mechanics;
+    const head = `<div class="mb-4 flex flex-wrap items-center gap-2"><div class="inline-flex overflow-hidden rounded-lg border border-zinc-200 bg-white text-xs" role="group" aria-label="View">${['day', 'week', 'month'].map((m) => `<button class="px-3 py-2 ${mode === m ? 'bg-violet-50 font-semibold text-violet-700' : 'text-zinc-600 hover:bg-zinc-50'}" data-cal-mode="${m}" aria-pressed="${mode === m}">${m[0].toUpperCase() + m.slice(1)}</button>`).join('')}</div>
+      <button class="btn btn-ghost" data-cal-nav="-1" aria-label="Previous">‹</button><button class="btn btn-ghost" data-cal-nav="0">Today</button><button class="btn btn-ghost" data-cal-nav="1" aria-label="Next">›</button>
+      <div class="px-2 text-sm font-semibold">${label}</div>
+      <select class="field ml-auto !w-auto" id="mechFilter" aria-label="Filter by mechanic"><option value="">All mechanics</option>${mechs.map((m) => `<option value="${m.id}" ${S.mechFilter === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select></div>
+      <div class="mb-3 flex flex-wrap gap-3 text-[10px] text-zinc-500"><span>${pill('Service / repair', 'violet')}</span><span>${pill('Inspection', 'blue')}</span><span>${pill('Awaiting confirmation', 'amber')}</span><span>${pill('Completed', 'zinc')}</span><span>⚠ parts missing</span></div>`;
+    const byDate = (d) => items.filter((b) => b.date === d);
+    let body = '';
+    if (mode === 'month') {
+      const days = []; for (let d = from; d <= to; d = addDays(d, 1)) days.push(d);
+      body = `<div class="card overflow-x-auto"><div class="grid min-w-[640px] grid-cols-7 border-b border-zinc-200 bg-zinc-50 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-500">${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((x) => `<div class="p-2">${x}</div>`).join('')}</div><div class="grid min-w-[640px] grid-cols-7">${days.map((d) => { const bs = byDate(d); const other = d.slice(0, 7) !== date.slice(0, 7); return `<div class="min-h-[96px] border-b border-r border-zinc-100 p-1.5 ${other ? 'bg-zinc-50/60 text-zinc-300' : ''} ${d === S.today ? 'bg-violet-50/50' : ''}"><button class="text-[11px] font-semibold ${d === S.today ? 'text-violet-700' : ''}" data-cal-day="${d}">${parse(d).getDate()}</button><div class="mt-1 space-y-1">${bs.slice(0, 3).map((b) => bookingChip(b, true)).join('')}${bs.length > 3 ? `<button class="text-[10px] font-semibold text-violet-700" data-cal-day="${d}">+${bs.length - 3} more</button>` : ''}</div></div>`; }).join('')}</div></div>`;
+    } else {
+      const days = []; for (let d = from; d <= to; d = addDays(d, 1)) days.push(d);
+      body = `<div class="grid gap-3 ${mode === 'week' ? 'md:grid-cols-2 xl:grid-cols-3' : ''}">${days.map((d) => { const bs = byDate(d); const closed = parse(d).getDay() === 0; return `<section class="card p-3 ${d === S.today ? 'ring-2 ring-violet-300' : ''}"><div class="mb-2 flex items-center justify-between"><button class="text-xs font-semibold hover:underline" data-cal-day="${d}">${DAYS[parse(d).getDay()]} ${pretty(d).split(', ')[1]}</button><span class="text-[10px] text-zinc-400">${closed ? 'Closed' : bs.filter((b) => b.status !== 'cancelled' && b.status !== 'no_show').length + ' booked'}</span></div><div class="space-y-1.5">${bs.length ? bs.map((b) => bookingChip(b)).join('') : `<p class="py-3 text-center text-[11px] text-zinc-400">${closed ? 'Workshop closed' : 'No appointments'}</p>`}</div></section>`; }).join('')}</div>`;
+    }
+    return head + body;
+  };
+  VIEWS['calendar$after'] = () => {
+    $('#newBooking').addEventListener('click', () => openBookingForm({}));
+    $('#mechFilter').addEventListener('change', (e) => { S.mechFilter = e.target.value; refresh(); });
+  };
+  document.addEventListener('click', (e) => {
+    const m = e.target.closest('[data-cal-mode]'); if (m) { S.cal.mode = m.dataset.calMode; refresh(); return; }
+    const n = e.target.closest('[data-cal-nav]'); if (n) {
+      const dir = Number(n.dataset.calNav); const d = S.cal.date;
+      if (dir === 0) S.cal.date = S.today;
+      else if (S.cal.mode === 'day') S.cal.date = addDays(d, dir);
+      else if (S.cal.mode === 'week') S.cal.date = addDays(d, 7 * dir);
+      else { const x = parse(d); S.cal.date = ymd(new Date(x.getFullYear(), x.getMonth() + dir, 1, 12)); }
+      refresh(); return;
+    }
+    const day = e.target.closest('[data-cal-day]'); if (day) { S.cal.date = day.dataset.calDay; S.cal.mode = 'day'; refresh(); }
+  });
+
+  async function openBooking(id) {
+    openModal(loading());
+    try {
+      const b = await api('/bookings/' + id); const live = b.status === 'confirmed' || b.status === 'pending';
+      openModal(`${modalHead(`${esc(b.repairType)} ${kindBadge(b.kind)}`, `${pretty(b.date)} · ${b.start}–${b.endTime} (${b.durationMin} min) · ${esc(b.mechanicName)}`)}
+      <div class="mb-3 flex flex-wrap items-center gap-2">${badge(b.status)}${b.source === 'ai_call' ? pill('Booked by AI receptionist', 'violet') : ''}${b.kind === 'inspection' ? pill('Inspection — no confirmed repair', 'amber') : ''}</div>
+      <dl class="grid gap-3 sm:grid-cols-2">
+        ${kv('Customer', `<button class="font-medium text-violet-700 hover:underline" data-customer="${b.customerId}">${esc(b.customerName)}</button><div class="text-[11px] text-zinc-500">${esc(b.customerPhone)}</div>`)}
+        ${kv('Vehicle', `${esc(b.vehicle)}<div class="text-[11px] text-zinc-500">${esc(b.reg)}</div>`)}
+        ${kv('Customer-reported issue', esc(b.reportedIssue))}${kv('Requested service', esc(b.repairType))}
+        ${kv('Initial AI assessment', esc(b.aiAssessment))}${kv('Job', `${esc(b.jobId)} · ${badge(b.jobStatus)}`)}
+        ${kv('Estimated labour', `${b.laborHours} h × ${money(b.laborRate)}/h`)}${kv('Estimated service cost', money(b.estimate))}
+        ${kv('Notes', esc(b.notes))}${kv('Source call', b.callId ? `<button class="font-medium text-violet-700 hover:underline" data-call="${b.callId}">${esc(b.callId)}</button>` : '—')}
+      </dl>
+      <div class="mt-4"><h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Parts required & inventory status</h3>${partsTable(b.parts)}${b.requestId ? `<button class="chip mt-2 w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs" data-request="${b.requestId}">Parts request ${esc(b.requestId)} · ${badge(b.requestStatus)} — open →</button>` : ''}</div>
+      ${live ? `<div class="mt-5 flex flex-wrap gap-2 border-t border-zinc-100 pt-4"><button class="btn btn-primary" data-edit-booking="${b.id}">Edit / reschedule</button><button class="btn btn-ghost" data-complete-booking="${b.id}">${b.kind === 'inspection' ? 'Mark inspection done' : 'Mark job completed'}</button><button class="btn btn-danger ml-auto" data-cancel-booking="${b.id}">Cancel appointment</button></div>` : ''}`, true);
+    } catch (e) { openModal(`${modalHead('Appointment')}<p class="text-xs text-rose-700">${esc(e.message)}</p>`); }
+  }
+  document.addEventListener('click', async (e) => {
+    const ed = e.target.closest('[data-edit-booking]'); if (ed) { openBookingForm({ edit: ed.dataset.editBooking }); return; }
+    const cp = e.target.closest('[data-complete-booking]');
+    if (cp) { const r = await act(cp, () => api(`/bookings/${cp.dataset.completeBooking}/complete`, { method: 'POST', body: {} }), 'Updated.'); if (r) { closeModal(); refresh(); } return; }
+    const cn = e.target.closest('[data-cancel-booking]');
+    if (cn) { if (!confirm('Cancel this appointment? The time slot is released and any open parts request for the job is cancelled.')) return; const r = await act(cn, () => api(`/bookings/${cn.dataset.cancelBooking}/cancel`, { method: 'POST', body: {} }), 'Appointment cancelled and the slot released.'); if (r) { closeModal(); refresh(); } }
+  });
+
+  async function openBookingForm(opts) {
+    openModal(loading());
+    try {
+      const [cust, existing, jobs] = await Promise.all([api('/customers'), opts.edit ? api('/bookings/' + opts.edit) : null, opts.jobId ? api('/jobs?status=') : null]);
+      let job = null; if (opts.jobId) job = jobs.items.find((j) => j.id === opts.jobId) || null;
+      const isEdit = !!existing;
+      const b = existing || { customerId: job?.customerId || '', vehicleId: job?.vehicleId || '', repairType: job?.repairType || 'oil_service', date: S.today && S.cal.date >= S.today ? S.cal.date : S.today, start: '09:00', mechanicId: '', durationMin: '', reportedIssue: '', notes: '', status: 'confirmed' };
+      const rts = S.meta.repairTypes.filter((r) => r.id !== 'follow_up_check' || b.repairType === 'follow_up_check' || true);
+      openModal(`${modalHead(isEdit ? 'Edit / reschedule appointment' : 'New appointment', isEdit ? `${esc(b.customerName)} · ${esc(b.vehicle)}` : 'Conflicts, hours and breaks are validated by the server.')}
+      <form id="bookingForm" class="grid gap-3 sm:grid-cols-2" novalidate>
+        ${isEdit ? '' : field('Customer', sel('customerId', [['', 'Select customer…'], ...cust.items.map((c) => [c.id, `${c.name} · ${c.phone}`])], b.customerId, { req: true }))}
+        ${isEdit ? '' : field('Vehicle', `<select class="field" name="vehicleId" id="bfVehicle" required><option value="">Select customer first</option></select>`)}
+        ${isEdit ? '' : field('Service type', sel('repairType', rts.map((r) => [r.id, `${r.name} (${r.durationMin} min)`]), b.repairType, { req: true }))}
+        ${field('Date', inp('date', b.date, { type: 'date', req: true }))}
+        ${field('Start time', `<select class="field" name="start" id="bfStart" required><option value="${esc(b.start)}">${esc(b.start)}</option></select>`, 'Only free times for the chosen date and duration are listed.')}
+        ${field('Mechanic', `<select class="field" name="mechanicId" id="bfMech"><option value="${esc(b.mechanicId)}">${isEdit ? esc(b.mechanicName) : 'Auto-assign'}</option></select>`)}
+        ${field('Duration (min)', inp('durationMin', isEdit ? b.durationMin : '', { type: 'number', min: 15, max: 480, step: 15, ph: 'Default for service type' }))}
+        ${isEdit ? field('Status', sel('status', [['confirmed', 'Confirmed'], ['pending', 'Awaiting confirmation']], b.status)) : field('Status', sel('status', [['confirmed', 'Confirmed'], ['pending', 'Awaiting confirmation']], 'confirmed'))}
+        <div class="sm:col-span-2">${field('Customer-reported issue', `<textarea class="field" name="reportedIssue" rows="2" maxlength="500">${esc(b.reportedIssue)}</textarea>`, 'Record what the customer says — not a diagnosis.')}</div>
+        <div class="sm:col-span-2">${field('Notes', `<textarea class="field" name="notes" rows="2" maxlength="500">${esc(b.notes)}</textarea>`)}</div>
+        <p id="bfErr" class="hidden rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 sm:col-span-2" role="alert"></p>
+        <div class="flex gap-2 sm:col-span-2"><button class="btn btn-violet" type="submit">${isEdit ? 'Save changes' : 'Create appointment'}</button><button class="btn btn-ghost" type="button" data-close>Cancel</button></div>
+      </form>`);
+      const form = $('#bookingForm');
+      const vehSel = $('#bfVehicle');
+      const fillVeh = async () => {
+        if (isEdit) return;
+        const cid = form.customerId.value; if (!cid) { vehSel.innerHTML = '<option value="">Select customer first</option>'; return; }
+        const d = await api('/customers/' + cid);
+        vehSel.innerHTML = d.vehicles.map((v) => `<option value="${v.id}" ${v.id === b.vehicleId ? 'selected' : ''}>${esc(`${v.year} ${v.make} ${v.model} · ${v.reg}`)}</option>`).join('') || '<option value="">No vehicles — add one first</option>';
+      };
+      const loadSlots = async () => {
+        const date = form.date.value; if (!date) return;
+        const rt = isEdit ? null : form.repairType.value; const dur = form.durationMin.value;
+        try {
+          const a = await api('/availability' + qs({ date, repairType: rt || 'oil_service', duration: dur || (isEdit ? b.durationMin : ''), ignore: isEdit ? b.id : '' }));
+          const cur = form.start.value;
+          if (!a.open) { $('#bfStart').innerHTML = '<option value="">Workshop closed</option>'; $('#bfMech').innerHTML = '<option value="">—</option>'; return; }
+          const times = a.slots.map((s) => s.start);
+          if (isEdit && date === b.date && !times.includes(b.start)) times.unshift(b.start); // keep the booking's own (e.g. already started) time
+          $('#bfStart').innerHTML = times.length ? times.map((t) => `<option value="${t}" ${t === (cur || (isEdit ? b.start : '')) ? 'selected' : ''}>${t}</option>`).join('') : '<option value="">No free times</option>';
+          fillMech(a);
+          S.slots = a;
+        } catch (x) { toast(x.message, 'err'); }
+      };
+      const fillMech = (a) => {
+        const s = (a.slots || []).find((x) => x.start === form.start.value);
+        const ids = s ? [...s.mechanicIds] : [];
+        const cur = isEdit ? b.mechanicId : '';
+        if (isEdit && form.date.value === b.date && form.start.value === b.start && !ids.includes(b.mechanicId)) ids.push(b.mechanicId);
+        $('#bfMech').innerHTML = (isEdit ? '' : '<option value="">Auto-assign</option>') + S.meta.mechanics.filter((m) => ids.includes(m.id)).map((m) => `<option value="${m.id}" ${m.id === cur ? 'selected' : ''}>${esc(m.name)}</option>`).join('');
+      };
+      form.customerId && form.customerId.addEventListener('change', fillVeh);
+      form.date.addEventListener('change', loadSlots);
+      form.durationMin.addEventListener('change', loadSlots);
+      form.repairType && form.repairType.addEventListener('change', loadSlots);
+      form.start.addEventListener('change', () => S.slots && fillMech(S.slots));
+      await fillVeh(); await loadSlots();
+      if (isEdit) { form.start.value = b.start; fillMech(S.slots); }
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault(); const err = $('#bfErr'); err.classList.add('hidden');
+        const v = formData(form);
+        if (!isEdit && (!v.customerId || !v.vehicleId)) { err.textContent = 'Choose a customer and a vehicle.'; err.classList.remove('hidden'); return; }
+        if (!v.start) { err.textContent = 'Choose a start time.'; err.classList.remove('hidden'); return; }
+        const body = { ...v }; if (!body.durationMin) delete body.durationMin; if (!body.mechanicId) delete body.mechanicId;
+        const btn = ev.submitter; if (btn) btn.disabled = true;
+        try {
+          if (isEdit) await api('/bookings/' + b.id, { method: 'PATCH', body });
+          else { if (job) body.jobId = job.id; await api('/bookings', { method: 'POST', body }); }
+          toast(isEdit ? 'Appointment updated.' : 'Appointment created.'); closeModal(); refresh();
+        } catch (x) { err.textContent = x.message; err.classList.remove('hidden'); if (x.status === 409) loadSlots(); }
+        finally { if (btn) btn.disabled = false; }
+      });
+    } catch (e) { openModal(`${modalHead('Appointment')}<p class="text-xs text-rose-700">${esc(e.message)}</p>`); }
+  }
+
+  // ---- customers
+  S.custQuery = '';
+  VIEWS.customers = async () => {
+    const d = await api('/customers' + qs({ q: S.custQuery }));
+    $('#headerActions').innerHTML = `<button class="btn btn-violet" id="newCustomer">+ New customer</button>`;
+    return `<form id="custSearch" class="mb-4 flex gap-2"><input class="field max-w-md" name="q" value="${esc(S.custQuery)}" placeholder="Search name, phone, registration, make or model…" aria-label="Search customers"><button class="btn btn-primary">Search</button>${S.custQuery ? '<button type="button" class="btn btn-ghost" id="clearCust">Clear</button>' : ''}<span class="ml-auto self-center text-[11px] text-zinc-500">${d.total} customers</span></form>
+    ${d.items.length ? `<div class="card overflow-x-auto"><table class="w-full text-xs"><thead class="bg-zinc-50 text-[10px] uppercase tracking-wider text-zinc-500"><tr><th class="p-3">Customer</th><th class="p-3">Contact</th><th class="hidden p-3 md:table-cell">Vehicles</th><th class="p-3">Open jobs</th><th class="hidden p-3 sm:table-cell">Next appointment</th></tr></thead><tbody>${d.items.map((c) => `<tr class="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50" data-customer="${c.id}" tabindex="0" role="button"><td class="p-3 font-medium">${esc(c.name)}<div class="text-[10px] font-normal text-zinc-400">${c.id}</div></td><td class="p-3">${esc(c.phone)}<div class="text-[10px] text-zinc-400">${esc(c.email)}</div></td><td class="hidden p-3 md:table-cell">${c.vehicles.map((v) => `<div>${esc(v.label)} <span class="text-zinc-400">${esc(v.reg)}</span></div>`).join('')}</td><td class="p-3">${c.openJobs || '—'}</td><td class="hidden p-3 sm:table-cell">${c.nextAppointment ? pretty(c.nextAppointment) : '—'}</td></tr>`).join('')}</tbody></table></div>` : empty('No customers match your search.')}`;
+  };
+  VIEWS['customers$after'] = () => {
+    $('#custSearch').addEventListener('submit', (e) => { e.preventDefault(); S.custQuery = new FormData(e.target).get('q').trim(); refresh(); });
+    const cl = $('#clearCust'); if (cl) cl.addEventListener('click', () => { S.custQuery = ''; refresh(); });
+    $('#newCustomer').addEventListener('click', () => openCustomerForm());
+  };
+  document.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-customer][role=button]')) { e.preventDefault(); openCustomer(e.target.dataset.customer); } });
+
+  async function openCustomer(id) {
+    openModal(loading(), true);
+    try {
+      const d = await api('/customers/' + id); const c = d.customer;
+      const open = d.jobs.filter((j) => !['completed', 'cancelled'].includes(j.status));
+      const upcoming = d.bookings.filter((b) => ['confirmed', 'pending'].includes(b.status)); const past = d.bookings.filter((b) => !['confirmed', 'pending'].includes(b.status));
+      openModal(`${modalHead(esc(c.name), `${esc(c.phone)}${c.email ? ' · ' + esc(c.email) : ''} · ${c.id}`)}
+      <div class="mb-3 flex flex-wrap gap-2"><button class="btn btn-ghost" id="editCust">Edit customer</button><button class="btn btn-ghost" id="addVeh">+ Add vehicle</button><button class="btn btn-violet" id="newReq">+ New service request</button><button class="btn btn-ghost" id="newBk">+ Book appointment</button></div>
+      ${c.notes ? `<p class="mb-3 rounded-xl bg-zinc-50 p-3 text-xs">${esc(c.notes)}</p>` : ''}
+      <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Vehicles</h3>
+      <div class="mb-4 grid gap-2 sm:grid-cols-2">${d.vehicles.length ? d.vehicles.map((v) => `<div class="rounded-xl border border-zinc-200 p-3 text-xs"><div class="font-medium">${v.year} ${esc(v.make)} ${esc(v.model)}</div><div class="text-zinc-500">${esc(v.reg)} · ${esc(v.engine || '—')} · ${esc(v.fuel || '—')} · ${v.mileage.toLocaleString('en-US')} km</div><div class="mt-2 flex gap-3"><button class="text-[11px] font-semibold text-violet-700" data-vehicle="${v.id}">View history</button><button class="text-[11px] font-semibold text-zinc-600" data-edit-vehicle="${v.id}">Edit</button></div></div>`).join('') : '<p class="text-xs text-zinc-500">No vehicles yet.</p>'}</div>
+      <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Open jobs</h3>
+      <div class="mb-4 space-y-2">${open.length ? open.map((j) => `<div class="rounded-xl border border-zinc-200 p-3 text-xs"><div class="flex items-center justify-between gap-2"><span class="font-medium">${esc(j.id)} · ${esc(j.title)} <span class="font-normal text-zinc-500">— ${esc(j.vehicle)}</span></span>${badge(j.status)}</div>${j.partChecks.length ? `<div class="mt-2">${partsTable(j.partChecks)}</div>` : ''}</div>`).join('') : '<p class="text-xs text-zinc-500">No open jobs.</p>'}</div>
+      <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Upcoming appointments</h3>
+      <div class="mb-4 space-y-1.5">${upcoming.length ? upcoming.map((b) => `<button class="chip flex w-full items-center justify-between rounded-xl border border-zinc-200 px-3 py-2 text-xs" data-booking="${b.id}"><span>${pretty(b.date)} ${b.start} · ${esc(b.repairType)} · ${esc(b.vehicle)}</span>${badge(b.status)}</button>`).join('') : '<p class="text-xs text-zinc-500">None.</p>'}</div>
+      <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Previous appointments & repairs</h3>
+      <div class="mb-4 space-y-1.5">${past.length ? past.slice(0, 12).map((b) => `<button class="chip flex w-full items-center justify-between rounded-xl border border-zinc-200 px-3 py-2 text-xs" data-booking="${b.id}"><span>${pretty(b.date)} · ${esc(b.repairType)} · ${esc(b.vehicle)}</span>${badge(b.status)}</button>`).join('') : '<p class="text-xs text-zinc-500">None.</p>'}</div>
+      ${d.requests.length ? `<h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Parts requests</h3><div class="mb-4 space-y-1.5">${d.requests.map((r) => `<button class="chip flex w-full items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs" data-request="${r.id}"><span>${esc(r.id)} · ${r.lines.map((l) => l.shortfall + '× ' + esc(l.description)).join(', ')}</span>${badge(r.status)}</button>`).join('')}</div>` : ''}
+      <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Call history</h3>
+      <div class="space-y-1.5">${d.calls.length ? d.calls.slice(0, 10).map((x) => `<button class="chip block w-full rounded-xl border border-zinc-200 px-3 py-2 text-xs" data-call="${x.id}"><div class="flex items-center justify-between"><span>${pretty(x.date)} ${x.time} · ${esc(x.requested)}</span>${badge(x.status)}</div><div class="mt-0.5 text-[11px] text-zinc-500 line-clamp-2">${esc(x.summary)}</div></button>`).join('') : '<p class="text-xs text-zinc-500">No calls.</p>'}</div>`, true);
+      $('#editCust').onclick = () => openCustomerForm(c);
+      $('#addVeh').onclick = () => openVehicleForm({ customerId: c.id });
+      $('#newReq').onclick = () => openServiceForm(d);
+      $('#newBk').onclick = () => openBookingForm({}).then(() => { const f = $('#bookingForm'); if (f && f.customerId) { f.customerId.value = c.id; f.customerId.dispatchEvent(new Event('change')); } });
+      $$('#modalCard [data-edit-vehicle]').forEach((b) => b.addEventListener('click', () => openVehicleForm({ vehicle: d.vehicles.find((v) => v.id === b.dataset.editVehicle) })));
+    } catch (e) { openModal(`${modalHead('Customer')}<p class="text-xs text-rose-700">${esc(e.message)}</p>`); }
+  }
+  document.addEventListener('click', (e) => { const v = e.target.closest('[data-vehicle]'); if (v) openVehicle(v.dataset.vehicle); });
+  async function openVehicle(id) {
+    openModal(loading(), true);
+    try {
+      const d = await api('/vehicles/' + id); const v = d.vehicle;
+      openModal(`${modalHead(`${v.year} ${esc(v.make)} ${esc(v.model)}`, `${esc(v.reg)} · ${esc(v.engine || '—')} · ${esc(v.fuel || '—')} · ${v.mileage.toLocaleString('en-US')} km · owner <button class="font-semibold text-violet-700" data-customer="${d.customer.id}">${esc(d.customer.name)}</button>`)}
+      <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Jobs</h3><div class="mb-4 space-y-1.5">${d.jobs.length ? d.jobs.map((j) => `<div class="rounded-xl border border-zinc-200 px-3 py-2 text-xs"><div class="flex items-center justify-between"><span>${esc(j.id)} · ${esc(j.title)}</span>${badge(j.status)}</div>${!['completed', 'cancelled'].includes(j.status) && j.partChecks.length ? `<div class="mt-2">${partsTable(j.partChecks)}</div>` : ''}</div>`).join('') : '<p class="text-xs text-zinc-500">No jobs.</p>'}</div>
+      <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Appointments</h3><div class="mb-4 space-y-1.5">${d.bookings.length ? d.bookings.slice(0, 15).map((b) => `<button class="chip flex w-full items-center justify-between rounded-xl border border-zinc-200 px-3 py-2 text-xs" data-booking="${b.id}"><span>${pretty(b.date)} ${b.start} · ${esc(b.repairType)}</span>${badge(b.status)}</button>`).join('') : '<p class="text-xs text-zinc-500">None.</p>'}</div>
+      <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Calls about this vehicle</h3><div class="space-y-1.5">${d.calls.length ? d.calls.slice(0, 8).map((x) => `<button class="chip block w-full rounded-xl border border-zinc-200 px-3 py-2 text-left text-xs" data-call="${x.id}">${pretty(x.date)} · ${esc(x.requested)} — ${esc(x.summary).slice(0, 110)}…</button>`).join('') : '<p class="text-xs text-zinc-500">None.</p>'}</div>`, true);
+    } catch (e) { openModal(`${modalHead('Vehicle')}<p class="text-xs text-rose-700">${esc(e.message)}</p>`); }
+  }
+  function openCustomerForm(c) {
+    openModal(`${modalHead(c ? 'Edit customer' : 'New customer', 'Use demo phone numbers only, such as +1 555-0123.')}
+    <form id="cf" class="grid gap-3" novalidate>${field('Full name', inp('name', c?.name, { req: true, maxlength: 80 }))}${field('Phone', inp('phone', c?.phone, { req: true, ph: '+1 555-0123' }))}${field('Email', inp('email', c?.email, { type: 'email', ph: 'name@example.test' }))}${field('Notes', `<textarea class="field" name="notes" rows="2" maxlength="500">${esc(c?.notes)}</textarea>`)}
+    <p id="cfErr" class="hidden rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700" role="alert"></p><div class="flex gap-2"><button class="btn btn-violet" type="submit">${c ? 'Save' : 'Create customer'}</button><button type="button" class="btn btn-ghost" data-close>Cancel</button></div></form>`);
+    $('#cf').addEventListener('submit', async (ev) => {
+      ev.preventDefault(); const err = $('#cfErr'); err.classList.add('hidden'); const btn = ev.submitter; btn.disabled = true;
+      try { const r = await api(c ? '/customers/' + c.id : '/customers', { method: c ? 'PATCH' : 'POST', body: formData(ev.target) }); toast(c ? 'Customer updated.' : 'Customer created.'); if (S.view === 'customers') { closeModal(); refresh(); } openCustomer(r.id); }
+      catch (x) { err.textContent = x.message; err.classList.remove('hidden'); } finally { btn.disabled = false; }
+    });
+  }
+  function openVehicleForm({ customerId, vehicle: v }) {
+    openModal(`${modalHead(v ? 'Edit vehicle' : 'Add vehicle')}
+    <form id="vf" class="grid gap-3 sm:grid-cols-2" novalidate>${field('Make', inp('make', v?.make, { req: true }))}${field('Model', inp('model', v?.model, { req: true }))}${field('Year', inp('year', v?.year, { type: 'number', min: 1980, max: 2027, req: true }))}${field('Registration', inp('reg', v?.reg, { req: true, ph: 'DEMO-AB123' }))}${field('Engine', inp('engine', v?.engine, { ph: '2.0 TDI' }))}${field('Fuel', sel('fuel', [['', '—'], ['Petrol', 'Petrol'], ['Diesel', 'Diesel'], ['Hybrid', 'Hybrid'], ['Electric', 'Electric']], v?.fuel))}${field('Mileage (km)', inp('mileage', v?.mileage, { type: 'number', min: 0 }))}
+    <p id="vfErr" class="hidden rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 sm:col-span-2" role="alert"></p><div class="flex gap-2 sm:col-span-2"><button class="btn btn-violet" type="submit">${v ? 'Save' : 'Add vehicle'}</button><button type="button" class="btn btn-ghost" data-close>Cancel</button></div></form>`);
+    $('#vf').addEventListener('submit', async (ev) => {
+      ev.preventDefault(); const err = $('#vfErr'); err.classList.add('hidden'); const btn = ev.submitter; btn.disabled = true;
+      const body = formData(ev.target); if (!v) body.customerId = customerId;
+      try { await api(v ? '/vehicles/' + v.id : '/vehicles', { method: v ? 'PATCH' : 'POST', body }); toast(v ? 'Vehicle updated.' : 'Vehicle added.'); openCustomer(v ? v.customerId : customerId); if (S.view === 'customers') refresh(); }
+      catch (x) { err.textContent = x.message; err.classList.remove('hidden'); } finally { btn.disabled = false; }
+    });
+  }
+  function openServiceForm(d) {
+    const types = S.meta.repairTypes.filter((r) => r.id !== 'follow_up_check');
+    openModal(`${modalHead('New service request', `For ${esc(d.customer.name)}. The system checks stock and creates a parts request if anything is missing.`)}
+    <form id="sf" class="grid gap-3" novalidate>${field('Vehicle', sel('vehicleId', d.vehicles.map((v) => [v.id, `${v.year} ${v.make} ${v.model} · ${v.reg}`]), '', { req: true }))}${field('Service', sel('repairType', types.map((r) => [r.id, `${r.name} (${r.kind})`]), 'oil_service', { req: true }))}${field('Notes', `<textarea class="field" name="notes" rows="2" maxlength="500"></textarea>`)}
+    <p id="sfErr" class="hidden rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700" role="alert"></p><div class="flex gap-2"><button class="btn btn-violet" type="submit" ${d.vehicles.length ? '' : 'disabled'}>Create request</button><button type="button" class="btn btn-ghost" data-close>Cancel</button></div>${d.vehicles.length ? '' : '<p class="text-xs text-amber-700">Add a vehicle first.</p>'}</form>`);
+    $('#sf').addEventListener('submit', async (ev) => {
+      ev.preventDefault(); const err = $('#sfErr'); err.classList.add('hidden'); const btn = ev.submitter; btn.disabled = true;
+      try { const j = await api('/service-requests', { method: 'POST', body: { ...formData(ev.target), customerId: d.customer.id } }); toast(`Service request ${j.id} created (${(STATUS[j.status] || [j.status])[0]}).`); openCustomer(d.customer.id); }
+      catch (x) { err.textContent = x.message; err.classList.remove('hidden'); } finally { btn.disabled = false; }
+    });
+  }
+
+  // ---- inventory
+  S.inv = { q: '', status: '', kind: '' };
+  VIEWS.inventory = async () => {
+    const d = await api('/inventory' + qs(S.inv)); const sm = d.summary;
+    $('#headerActions').innerHTML = `<button class="btn btn-violet" id="newPart">+ Add part</button>`;
+    const kinds = S.meta.partKinds;
+    return `<div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">${stat('In stock', sm.in_stock, '', 'text-emerald-600')}${stat('Low stock', sm.low_stock, '', 'text-amber-600')}${stat('Out of stock', sm.out_of_stock, '', 'text-rose-600')}${stat('Fully reserved', sm.fully_reserved, 'all units held for jobs', 'text-violet-700')}${stat('Stock value', money(sm.value), 'at purchase cost')}</div>
+    <form id="invFilters" class="card mb-4 grid gap-3 p-4 sm:grid-cols-3">${field('Search', inp('q', S.inv.q, { ph: 'Name, SKU, supplier, make or model…' }))}${field('Status', sel('status', [['', 'All'], ['in_stock', 'In stock'], ['low_stock', 'Low stock'], ['out_of_stock', 'Out of stock'], ['fully_reserved', 'Reserved for a repair']], S.inv.status))}${field('Category', sel('kind', [['', 'All'], ...kinds.map((k) => [k, k.replaceAll('_', ' ')])], S.inv.kind))}<div class="flex gap-2 sm:col-span-3"><button class="btn btn-primary">Apply</button><button class="btn btn-ghost" type="button" id="clearInv">Clear</button><span class="ml-auto self-center text-[11px] text-zinc-500">${d.total} items</span></div></form>
+    ${d.items.length ? `<div class="card overflow-x-auto"><table class="w-full text-xs"><thead class="bg-zinc-50 text-[10px] uppercase tracking-wider text-zinc-500"><tr><th class="p-3">Part</th><th class="hidden p-3 lg:table-cell">Compatible with</th><th class="p-3 text-right">On hand</th><th class="p-3 text-right">Reserved</th><th class="p-3 text-right">Available</th><th class="hidden p-3 text-right sm:table-cell">Min</th><th class="hidden p-3 text-right md:table-cell">Unit cost</th><th class="hidden p-3 md:table-cell">Supplier · lead</th><th class="p-3">Status</th><th class="p-3"></th></tr></thead><tbody>${d.items.map((p) => `<tr class="border-t border-zinc-100"><td class="p-3"><div class="font-medium">${esc(p.name)}</div><div class="text-[10px] text-zinc-400">${esc(p.sku)}${p.compatVerified ? '' : ' · <span class="text-amber-700">fitment unverified</span>'}</div></td><td class="hidden max-w-[220px] p-3 text-[11px] text-zinc-500 lg:table-cell">${p.compat.some((c) => c.make === '*') ? 'Universal' : [...new Set(p.compat.map((c) => `${c.make} ${c.model}`))].join(', ')}</td><td class="p-3 text-right font-semibold">${p.quantity}</td><td class="p-3 text-right">${p.reserved || '—'}</td><td class="p-3 text-right">${p.available}</td><td class="hidden p-3 text-right sm:table-cell">${p.minStock}</td><td class="hidden p-3 text-right md:table-cell">${money(p.unitCost)}</td><td class="hidden p-3 md:table-cell">${esc(p.supplier)}<div class="text-[10px] text-zinc-400">${p.leadDays} day(s)</div></td><td class="p-3">${badge(p.status)}</td><td class="p-3 whitespace-nowrap"><button class="text-[11px] font-semibold text-violet-700" data-adjust="${p.id}">Adjust</button> <button class="ml-2 text-[11px] font-semibold text-zinc-600" data-moves="${p.id}">History</button></td></tr>`).join('')}</tbody></table></div>` : empty('No parts match these filters.')}`;
+  };
+  VIEWS['inventory$after'] = () => {
+    $('#invFilters').addEventListener('submit', (e) => { e.preventDefault(); S.inv = formData(e.target); refresh(); });
+    $('#clearInv').addEventListener('click', () => { S.inv = { q: '', status: '', kind: '' }; refresh(); });
+    $('#newPart').addEventListener('click', openPartForm);
+  };
+  document.addEventListener('click', async (e) => {
+    const a = e.target.closest('[data-adjust]'); const m = e.target.closest('[data-moves]');
+    if (a) {
+      const d = await act(null, () => api('/inventory/' + a.dataset.adjust + '/movements')); if (!d) return; const p = d.part;
+      openModal(`${modalHead('Adjust stock', `${esc(p.name)} · ${esc(p.sku)}`)}<p class="mb-3 text-xs text-zinc-600">On hand <b>${p.quantity}</b> · reserved <b>${p.reserved}</b> · available <b>${p.available}</b></p>
+      <form id="af" class="grid gap-3" novalidate>${field('Change (use negative to remove)', inp('delta', '', { type: 'number', req: true, ph: '+5 or -2' }))}${field('Reason', inp('reason', '', { req: true, ph: 'Supplier delivery, stock count, damaged…', maxlength: 120 }))}<p id="afErr" class="hidden rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700" role="alert"></p><div class="flex gap-2"><button class="btn btn-violet" type="submit">Save adjustment</button><button class="btn btn-ghost" type="button" data-close>Cancel</button></div></form>`);
+      $('#af').addEventListener('submit', async (ev) => { ev.preventDefault(); const err = $('#afErr'); err.classList.add('hidden'); const v = formData(ev.target); ev.submitter.disabled = true; try { await api(`/inventory/${p.id}/adjust`, { method: 'POST', body: { delta: Number(v.delta), reason: v.reason } }); toast('Stock updated. Open jobs re-checked.'); closeModal(); refresh(); } catch (x) { err.textContent = x.message; err.classList.remove('hidden'); } finally { ev.submitter.disabled = false; } });
+    }
+    if (m) {
+      const d = await act(null, () => api('/inventory/' + m.dataset.moves + '/movements')); if (!d) return; const p = d.part;
+      openModal(`${modalHead('Inventory movements', `${esc(p.name)} · ${p.quantity} on hand`)}${d.reservedBy.length ? `<div class="mb-3 rounded-xl border border-violet-200 bg-violet-50 p-3 text-xs"><b>Reserved for:</b> ${d.reservedBy.map((r) => `${esc(r.jobId)} ${esc(r.title)} (${r.qty})`).join(', ')}</div>` : ''}${d.movements.length ? `<table class="w-full text-xs"><thead class="text-[10px] uppercase tracking-wider text-zinc-400"><tr><th class="pb-1">Date</th><th class="pb-1">Change</th><th class="pb-1">Reason</th><th class="pb-1">Ref</th></tr></thead><tbody>${d.movements.map((x) => `<tr class="border-t border-zinc-100"><td class="py-2">${esc(x.at.slice(0, 10))}</td><td class="py-2 font-semibold ${x.delta < 0 ? 'text-rose-600' : 'text-emerald-600'}">${x.delta > 0 ? '+' : ''}${x.delta}</td><td class="py-2">${esc(x.reason)}</td><td class="py-2 text-zinc-400">${esc(x.ref || '')}</td></tr>`).join('')}</tbody></table>` : '<p class="text-xs text-zinc-500">No movements.</p>'}`);
+    }
+  });
+  function openPartForm() {
+    const kinds = S.meta.partKinds;
+    openModal(`${modalHead('Add part', 'Compatibility is used when the AI checks stock — leave it unverified if unsure.')}<form id="pf" class="grid gap-3 sm:grid-cols-2" novalidate>${field('Name', inp('name', '', { req: true }))}${field('SKU', inp('sku', '', { req: true }))}${field('Category', `<input class="field" name="kind" list="kinds" required placeholder="e.g. brake_pads_front"><datalist id="kinds">${kinds.map((k) => `<option value="${k}">`).join('')}</datalist>`, 'Use an existing category so the AI can find it.')}${field('Supplier', inp('supplier', '', { req: true }))}${field('Quantity', inp('quantity', 0, { type: 'number', min: 0 }))}${field('Minimum stock', inp('minStock', 1, { type: 'number', min: 0 }))}${field('Unit cost (€)', inp('unitCost', '', { type: 'number', min: 0, step: '0.01', req: true }))}${field('Lead time (days)', inp('leadDays', 3, { type: 'number', min: 0, max: 90 }))}${field('Compatible make', inp('cmake', '', { ph: 'Volkswagen (or * for universal)' }))}${field('Compatible model', inp('cmodel', '', { ph: 'Golf (or *)' }))}${field('Years from', inp('yfrom', 2012, { type: 'number' }))}${field('Years to', inp('yto', 2024, { type: 'number' }))}<label class="flex items-center gap-2 text-xs sm:col-span-2"><input type="checkbox" name="verified"> Compatibility verified by staff</label><p id="pfErr" class="hidden rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 sm:col-span-2" role="alert"></p><div class="flex gap-2 sm:col-span-2"><button class="btn btn-violet" type="submit">Add part</button><button class="btn btn-ghost" type="button" data-close>Cancel</button></div></form>`);
+    $('#pf').addEventListener('submit', async (ev) => {
+      ev.preventDefault(); const err = $('#pfErr'); err.classList.add('hidden'); const v = formData(ev.target);
+      const body = { name: v.name, sku: v.sku, kind: v.kind, supplier: v.supplier, quantity: Number(v.quantity), minStock: Number(v.minStock), unitCost: Number(v.unitCost), leadDays: Number(v.leadDays), compatVerified: !!v.verified, compat: v.cmake ? [{ make: v.cmake, model: v.cmodel || '*', yearFrom: Number(v.yfrom) || 1980, yearTo: Number(v.yto) || 2030 }] : [] };
+      ev.submitter.disabled = true; try { await api('/inventory', { method: 'POST', body }); toast('Part added.'); closeModal(); refresh(); } catch (x) { err.textContent = x.message; err.classList.remove('hidden'); } finally { ev.submitter.disabled = false; }
+    });
+  }
+
+  // ---- parts requests
+  S.reqFilter = '';
+  VIEWS.requests = async () => {
+    const d = await api('/requests' + qs({ status: S.reqFilter }));
+    const focus = S.focusRequest; S.focusRequest = null;
+    const note = `<div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900"><b>Human approval required.</b> The AI only <i>proposes</i> purchases. It never orders, pays or commits the business. Prices, suppliers and delivery dates below are <b>fictional demo values</b>, not live market quotes. “Ordered” only records that an authorised person placed the order — in this demo, nothing is actually purchased.</div>`;
+    return note + `<div class="mb-4 flex flex-wrap items-center gap-2">${[['', 'Open'], ['awaiting_approval', 'Awaiting approval'], ['approved', 'Approved'], ['ordered', 'Ordered'], ['ready_for_repair', 'Ready for repair'], ['all', 'All']].map(([v, l]) => `<button class="btn ${S.reqFilter === v ? 'btn-violet' : 'btn-ghost'}" data-reqf="${v}">${l}</button>`).join('')}<span class="ml-auto text-[11px] text-zinc-500">${d.total} request(s)</span></div>
+    ${d.items.length ? `<div class="space-y-3">${d.items.map((r) => requestCard(r, focus === r.id)).join('')}</div>` : empty('No parts requests here. Requests are created automatically when a job needs parts that aren’t in stock.')}`;
+  };
+  VIEWS['requests$after'] = () => { const f = $('[data-focused="1"]'); if (f) f.scrollIntoView({ block: 'center' }); };
+  document.addEventListener('click', (e) => { const f = e.target.closest('[data-reqf]'); if (f) { S.reqFilter = f.dataset.reqf; refresh(); } });
+  function requestCard(r, focused) {
+    const canChoose = ['awaiting_verification', 'parts_required', 'awaiting_price_confirmation', 'awaiting_approval'].includes(r.status);
+    const unsure = r.lines.some((l) => l.compat === 'uncertain');
+    return `<article class="card p-4 md:p-5 ${focused ? 'ring-2 ring-violet-400' : ''}" ${focused ? 'data-focused="1"' : ''}>
+      <div class="flex flex-wrap items-start justify-between gap-2"><div><h3 class="text-sm font-semibold">${esc(r.id)} · ${esc(r.customerName)} <span class="font-normal text-zinc-500">— ${esc(r.vehicle)} (${esc(r.reg)})</span></h3><p class="text-[11px] text-zinc-500">Job ${esc(r.jobId)} · ${esc(r.jobTitle)} · ${badge(r.jobStatus)}</p></div><div class="flex flex-wrap gap-2">${badge(r.status)}${pill('Approval: ' + r.approval, r.approval === 'approved' ? 'green' : r.approval === 'rejected' ? 'red' : 'amber')}</div></div>
+      <div class="mt-3 overflow-x-auto"><table class="w-full text-xs"><thead class="text-[10px] uppercase tracking-wider text-zinc-400"><tr><th class="pb-1">Part to source</th><th class="pb-1 text-center">Need</th><th class="pb-1 text-center">In stock</th><th class="pb-1">Supplier option (demo)</th><th class="pb-1 text-right">Unit</th><th class="pb-1 text-right">Est. delivery</th></tr></thead><tbody>${r.lines.map((l, i) => `<tr class="border-t border-zinc-100 align-top"><td class="py-2 pr-2"><div class="font-medium">${esc(l.description)}</div><div class="text-[10px] text-zinc-400">${esc(l.partNumber)}${l.compat === 'uncertain' ? ' · ' + 'fitment must be verified' : ''}${l.received ? ' · received' : ''}</div></td><td class="py-2 text-center">${l.shortfall}</td><td class="py-2 text-center">${l.inStock}</td><td class="py-2 pr-2">${canChoose ? `<select class="field !py-1 !text-[11px]" data-choose="${r.id}" data-line="${i}" aria-label="Supplier option">${l.options.map((o, k) => `<option value="${k}" ${k === l.chosen ? 'selected' : ''}>${esc(o.supplier)} · ${money(o.unitPrice)} · ${o.leadDays}d</option>`).join('')}</select>` : esc(l.options[l.chosen]?.supplier || '')}</td><td class="py-2 text-right">${money(l.unitPrice)}</td><td class="py-2 text-right">${pretty(l.etaDate)}<div class="text-[10px] text-zinc-400">~${l.leadDays} business day(s)</div></td></tr>`).join('')}</tbody></table></div>
+      <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px]"><span class="text-zinc-500">${esc(r.lines[0]?.priceSource || '')} · quoted ${esc((r.lines[0]?.priceAt || '').slice(0, 16).replace('T', ' '))}</span><span class="text-sm font-semibold">Estimated total ${money(r.total)}</span></div>
+      ${r.notes ? `<p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-900">${esc(r.notes)}</p>` : ''}
+      <details class="mt-2 text-[11px] text-zinc-500"><summary class="cursor-pointer font-medium">History</summary><ul class="mt-1 space-y-0.5">${r.history.map((h) => `<li>${esc(h.at.slice(0, 16).replace('T', ' '))} — ${esc(h.text)}</li>`).join('')}</ul></details>
+      <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3">
+        ${['awaiting_verification', 'parts_required'].includes(r.status) ? `<button class="btn btn-ghost" data-req-act="verify" data-id="${r.id}">Verify inventory & fitment</button>` : ''}
+        ${canChoose ? `${unsure ? `<label class="flex items-center gap-1.5 text-[11px]"><input type="checkbox" data-fit="${r.id}"> I verified fitment</label>` : ''}<button class="btn btn-violet" data-req-act="approve" data-id="${r.id}">Approve for manual ordering</button><button class="btn btn-danger" data-req-act="reject" data-id="${r.id}">Reject</button>` : ''}
+        ${r.status === 'approved' ? `<button class="btn btn-primary" data-req-act="ordered" data-id="${r.id}">Record order placed (simulated)</button><button class="btn btn-danger" data-req-act="reject" data-id="${r.id}">Cancel request</button>` : ''}
+        ${r.status === 'ordered' ? `<button class="btn btn-violet" data-req-act="receive" data-id="${r.id}">Mark parts received</button>` : ''}
+        ${r.status === 'ready_for_repair' ? '<span class="text-[11px] text-emerald-700">All parts received and reserved — the job is ready for repair.</span>' : ''}
+      </div></article>`;
+  }
+  document.addEventListener('change', async (e) => {
+    const c = e.target.closest('[data-choose]'); if (!c) return;
+    await act(c, () => api(`/requests/${c.dataset.choose}/action`, { method: 'POST', body: { action: 'choose', line: Number(c.dataset.line), option: Number(c.value) } }), 'Supplier option updated (simulated quote).'); refresh();
+  });
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-req-act]'); if (!b) return;
+    const action = b.dataset.reqAct; const id = b.dataset.id;
+    const msgs = { verify: 'Verified.', approve: 'Approved for manual ordering. Nothing has been ordered.', reject: 'Request closed.', ordered: 'Order recorded (simulated — no real purchase).', receive: 'Parts received, inventory updated.' };
+    if (action === 'reject' && !confirm('Close this request? Nothing has been ordered.')) return;
+    const body = { action }; if (action === 'approve') { const f = $(`[data-fit="${id}"]`); body.confirmFitment = !!(f && f.checked); }
+    const r = await act(b, () => api(`/requests/${id}/action`, { method: 'POST', body }), msgs[action]); if (r) refresh();
+  });
+
+  // ---- jobs
+  S.jobFilter = '';
+  VIEWS.jobs = async () => {
+    const [j, t] = await Promise.all([api('/jobs' + qs({ status: S.jobFilter })), api('/tasks')]);
+    const filters = [['', 'Open'], ['awaiting_parts', 'Awaiting parts'], ['pending_inspection', 'Awaiting inspection'], ['scheduled', 'Scheduled'], ['in_progress', 'In progress'], ['ready', 'Ready'], ['completed', 'Completed'], ['cancelled', 'Cancelled']];
+    return `<div class="grid gap-4 xl:grid-cols-3"><div class="xl:col-span-2"><div class="mb-3 flex flex-wrap gap-2">${filters.map(([v, l]) => `<button class="btn ${S.jobFilter === v ? 'btn-violet' : 'btn-ghost'}" data-jobf="${v}">${l}</button>`).join('')}</div>
+    ${j.items.length ? `<div class="card overflow-x-auto"><table class="w-full text-xs"><thead class="bg-zinc-50 text-[10px] uppercase tracking-wider text-zinc-500"><tr><th class="p-3">Job</th><th class="p-3">Customer · vehicle</th><th class="p-3">Status</th><th class="hidden p-3 sm:table-cell">Parts</th><th class="p-3 text-right">Estimate</th><th class="p-3"></th></tr></thead><tbody>${j.items.map((x) => { const miss = x.partChecks.filter((c) => c.shortfall > 0).length; return `<tr class="border-t border-zinc-100"><td class="p-3 font-medium">${esc(x.id)}<div class="font-normal text-zinc-500">${esc(x.title)}</div></td><td class="p-3"><button class="text-left font-medium text-violet-700 hover:underline" data-customer="${x.customerId}">${esc(x.customerName)}</button><div class="text-[10px] text-zinc-500">${esc(x.vehicle)}</div></td><td class="p-3">${badge(x.status)}</td><td class="hidden p-3 sm:table-cell">${x.partChecks.length ? (miss ? pill(miss + ' missing', 'red') : pill('reserved', 'green')) : '—'}${x.requestId ? `<div><button class="text-[10px] font-semibold text-violet-700" data-request="${x.requestId}">${x.requestId}</button></div>` : ''}</td><td class="p-3 text-right">${money(x.estimate)}</td><td class="p-3 whitespace-nowrap text-right">${!['completed', 'cancelled'].includes(x.status) ? `${x.status !== 'in_progress' && !miss ? `<button class="text-[11px] font-semibold text-violet-700" data-job="${x.id}" data-to="in_progress">Start</button> ` : ''}${!miss ? `<button class="ml-1 text-[11px] font-semibold text-emerald-700" data-job="${x.id}" data-to="completed">Complete</button>` : ''}` : ''}</td></tr>`; }).join('')}</tbody></table></div>` : empty('No jobs in this state.')}</div>
+    ${section('Workshop tasks', t.items.length ? `<ul class="space-y-2">${t.items.map((x) => `<li class="flex items-start gap-2 text-xs"><input type="checkbox" class="mt-0.5" data-task="${x.id}" ${x.done ? 'checked' : ''} aria-label="Done: ${esc(x.text)}"><span class="${x.done ? 'text-zinc-400 line-through' : ''}">${esc(x.text)}<span class="block text-[10px] text-zinc-400">due ${pretty(x.due)}</span></span></li>`).join('')}</ul>` : empty('No tasks.'))}</div>`;
+  };
+  document.addEventListener('click', async (e) => {
+    const f = e.target.closest('[data-jobf]'); if (f) { S.jobFilter = f.dataset.jobf; refresh(); return; }
+    const b = e.target.closest('[data-job]'); if (!b) return;
+    if (b.dataset.to === 'completed' && !confirm('Mark this job completed? Reserved parts will be deducted from stock.')) return;
+    const r = await act(b, () => api('/jobs/' + b.dataset.job, { method: 'PATCH', body: { status: b.dataset.to } }), b.dataset.to === 'completed' ? 'Job completed and stock updated.' : 'Job started.'); if (r) refresh();
+  });
+
+  // ---- AI receptionist (simulated)
+  S.agent = { scenarios: [], session: null, busy: false };
+  VIEWS.agent = async () => {
+    if (!S.agent.scenarios.length) S.agent.scenarios = (await api('/scenarios')).items;
+    return renderAgent();
+  };
+  function renderAgent() {
+    const a = S.agent; const s = a.session;
+    const icon = { done: '✓', warn: '!', info: 'i', pending: '·' }; const tone = { done: 'bg-emerald-100 text-emerald-700', warn: 'bg-amber-100 text-amber-800', info: 'bg-sky-100 text-sky-700', pending: 'bg-zinc-100 text-zinc-400' };
+    const banner = `<div class="mb-4 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-xs leading-5 text-violet-900"><b>Simulation.</b> This is a deterministic demo of the AI receptionist using the workshop’s real demo data and business rules. No real phone call is made, no messages are sent, and the AI can never order parts or take payment.</div>`;
+    const scen = `<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">${a.scenarios.map((x) => `<div class="card flex flex-col p-4"><h3 class="text-sm font-semibold">${esc(x.title)}</h3><p class="mt-1 flex-1 text-[11px] leading-5 text-zinc-500">${esc(x.description)}</p><button class="btn btn-ghost mt-3" data-scenario="${x.id}">▶ Run this scenario</button></div>`).join('')}
+      <form id="customCall" class="card p-4"><h3 class="text-sm font-semibold">Your own call</h3><p class="mt-1 text-[11px] leading-5 text-zinc-500">Start a blank simulated call and type what the customer says. Leave the number empty for a new caller.</p><input class="field mt-3" name="callerId" placeholder="Caller number (optional), e.g. +1 555-0107" aria-label="Caller number"><button class="btn btn-violet mt-3 w-full" type="submit">☎ Simulate incoming call</button></form></div>`;
+    if (!s) return banner + scen;
+    const over = s.stage === 'confirmed' || s.stage === 'ended';
+    const r = s.result;
+    return `${banner}<div class="mb-3 flex flex-wrap items-center gap-2"><button class="btn btn-ghost" id="agentBack">← Scenarios</button>${pill(s.scenario ? 'Scenario ' + s.scenario : 'Custom call', 'violet')}${pill('Simulated', 'violet')}${over ? pill(s.stage === 'confirmed' ? 'Call ended · booked' : 'Call ended', 'green') : ''}</div>
+    <div class="grid gap-4 xl:grid-cols-5">
+      <section class="card flex flex-col xl:col-span-3"><div class="border-b border-zinc-100 px-4 py-3 text-sm font-semibold">Conversation</div>
+        <div id="chatLog" class="scroll-thin max-h-[560px] min-h-[320px] space-y-2.5 overflow-y-auto p-4" aria-live="polite">${s.transcript.map((t) => t.role === 'system' ? `<div class="text-center text-[10px] text-zinc-400">${esc(t.text)}</div>` : `<div class="flex ${t.role === 'ai' ? '' : 'justify-end'}"><div class="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-xs leading-5 ${t.role === 'ai' ? 'bubble-ai' : 'bubble-c'}"><div class="mb-0.5 text-[9px] font-semibold uppercase tracking-wider opacity-60">${t.role === 'ai' ? 'AI receptionist (simulated)' : 'Customer'}</div><pre class="wrap">${esc(t.text)}</pre></div></div>`).join('')}${a.busy ? '<div class="text-xs text-zinc-400"><span class="spin"></span></div>' : ''}</div>
+        ${s.stage === 'offering' ? `<div class="flex flex-wrap gap-2 border-t border-zinc-100 px-4 py-3">${s.options.map((o, i) => `<button class="btn btn-violet !normal-case" data-pick="${o.id}" ${a.busy ? 'disabled' : ''}>Option ${i + 1}</button>`).join('')}<span class="self-center text-[11px] text-zinc-400">or type another day/time below</span></div>` : ''}
+        ${over ? `<div class="border-t border-zinc-100 px-4 py-3"><button class="btn btn-violet" id="agentAgain">Start another call</button></div>` : `<form id="agentForm" class="flex gap-2 border-t border-zinc-100 p-3"><input class="field" name="text" maxlength="600" autocomplete="off" placeholder="Type what the customer says…" aria-label="Customer message" ${a.busy ? 'disabled' : ''}><button class="btn btn-primary" ${a.busy ? 'disabled' : ''}>Send</button><button type="button" class="btn btn-ghost" id="hangup" ${a.busy ? 'disabled' : ''}>Hang up</button></form>${s.scenario ? `<div class="flex flex-wrap items-center gap-2 border-t border-zinc-100 px-4 py-2 text-[11px] text-zinc-500">Suggested lines: ${(a.scenarios.find((x) => x.id === s.scenario)?.script || []).map((l) => `<button class="rounded-lg border border-zinc-200 px-2 py-1 text-left hover:bg-zinc-50" data-say="${esc(l)}">${esc(l)}</button>`).join('')}</div>` : ''}`}
+      </section>
+      <section class="space-y-4 xl:col-span-2"><div class="card p-4"><h2 class="mb-3 text-sm font-semibold">Agent workflow</h2><ol class="space-y-2">${s.steps.map((st) => `<li class="flex gap-2.5 text-xs"><span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold ${tone[st.status]}">${icon[st.status]}</span><div class="min-w-0"><div class="font-medium ${st.status === 'pending' ? 'text-zinc-400' : ''}">${esc(st.label)}</div>${st.detail ? `<div class="text-[11px] leading-4 text-zinc-500">${esc(st.detail)}</div>` : ''}</div></li>`).join('')}</ol></div>
+      ${s.plan && s.stage === 'offering' ? `<div class="card p-4"><h2 class="mb-2 text-sm font-semibold">Inventory check & sourcing</h2>${s.plan.parts.length ? partsTable(s.plan.parts) : '<p class="text-xs text-zinc-500">No parts needed.</p>'}${s.plan.missing.length ? `<p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-900">Missing parts will be added to a parts request for a human to approve. Demo prices only.</p>` : ''}</div>` : ''}
+      ${r ? `<div class="card border-emerald-200 p-4"><h2 class="mb-2 text-sm font-semibold">Summary of actions taken</h2><ul class="list-disc space-y-1 pl-4 text-xs">${r.actions.map((x) => `<li>${esc(x)}</li>`).join('')}</ul><div class="mt-3 flex flex-wrap gap-2 text-xs">${r.callId ? `<button class="btn btn-ghost" data-call="${r.callId}">Open call record</button>` : ''}${r.customerId ? `<button class="btn btn-ghost" data-customer="${r.customerId}">Open customer</button>` : ''}${r.bookingIds.length ? `<button class="btn btn-ghost" data-booking="${r.bookingIds[0]}">Open appointment</button>` : ''}${r.requestId ? `<button class="btn btn-ghost" data-request="${r.requestId}">Open parts request</button>` : ''}<button class="btn btn-ghost" data-go="calendar">Calendar</button><button class="btn btn-ghost" data-go="dashboard">Dashboard</button></div><p class="mt-2 text-[10px] text-zinc-400">${r.taskIds.length} follow-up task(s) created. Nothing was ordered.</p></div>` : ''}</section></div>`;
+  }
+  function paintAgent() { if (S.view !== 'agent') return; $('#content').innerHTML = renderAgent(); const l = $('#chatLog'); if (l) l.scrollTop = l.scrollHeight; const f = $('#agentForm input'); if (f && !S.agent.busy) f.focus(); }
+  async function agentCall(fn) {
+    if (S.agent.busy) return; S.agent.busy = true; paintAgent();
+    try { S.agent.session = await fn(); } catch (e) { if (e.status !== 401) toast(e.message, 'err'); }
+    finally { S.agent.busy = false; paintAgent(); }
+  }
+  document.addEventListener('click', (e) => {
+    if (S.view !== 'agent') return;
+    const sc = e.target.closest('[data-scenario]'); if (sc) { const x = S.agent.scenarios.find((y) => y.id === sc.dataset.scenario); agentCall(() => api('/agent/sessions', { method: 'POST', body: { scenario: x.id, callerId: x.callerId } })); return; }
+    if (e.target.closest('#agentBack') || e.target.closest('#agentAgain')) { S.agent.session = null; paintAgent(); return; }
+    const pick = e.target.closest('[data-pick]'); if (pick) { agentCall(() => api(`/agent/sessions/${S.agent.session.id}/choose`, { method: 'POST', body: { optionId: pick.dataset.pick } })); return; }
+    const say = e.target.closest('[data-say]'); if (say) { const i = $('#agentForm input'); if (i) { i.value = say.dataset.say; i.focus(); } return; }
+    if (e.target.closest('#hangup')) agentCall(() => api(`/agent/sessions/${S.agent.session.id}/end`, { method: 'POST', body: {} }));
+  });
+  document.addEventListener('submit', (e) => {
+    if (S.view !== 'agent') return;
+    if (e.target.id === 'agentForm') { e.preventDefault(); const text = new FormData(e.target).get('text').trim(); if (!text) return; const s = S.agent.session; s.transcript.push({ role: 'customer', text }); agentCall(() => api(`/agent/sessions/${s.id}/messages`, { method: 'POST', body: { text } })); }
+    if (e.target.id === 'customCall') { e.preventDefault(); const callerId = new FormData(e.target).get('callerId').trim(); agentCall(() => api('/agent/sessions', { method: 'POST', body: { callerId } })); }
+  });
+
+  // --------------------------------------------------------------- boot
+  window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (VIEWS[v] && v !== S.view && !$('#portal').classList.contains('hidden')) go(v, false); });
+  (async function boot() {
+    if (!sessionStorage.getItem(TOKEN_KEY)) { showLogin(); return; }
+    try { await showPortal(); } catch (e) { if (e.status !== 401) { toast(e.message, 'err'); } }
+  })();
+})();
+</script>
+</body>
+</html>
