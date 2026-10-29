@@ -1,3 +1,4 @@
+import { receptionConfigFromEnv } from "./reception.js";
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { CallAgent } from "../agent/callAgent.js";
@@ -53,6 +54,7 @@ const server = createApiServer({
   warehousePlanPriceEur: validWarehousePrice,
   adminKey,
   admin,
+  reception: receptionConfigFromEnv(),
 });
 
 server.listen(port, () => {
@@ -72,3 +74,4 @@ function shutdown(): void {
 
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
+
